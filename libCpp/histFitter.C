@@ -44,6 +44,7 @@ public:
   tnpFitter( TH1 *hPass, TH1 *hFail, std::string histname, int massbins, float massmin, float massmax  );
     ~tnpFitter(); //{ if( _work != 0 ) delete _work; }
   void setZLineShapes(TH1 *hZPass, TH1 *hZFail );
+  void setTotalBkgShapes(TH1 *hBkgPass, TH1 *hBkgFail );
   void setWorkspace(const std::vector<std::string>&, bool, bool, bool);
   //void setOutputFile(const std::string& fname ) {_fOut = new TFile(fname.c_str(), "recreate"); } 
   void setOutputFile(const std::string& fname );
@@ -219,6 +220,13 @@ void tnpFitter::setConstantVariable(const std::string& name, const double& val =
 void tnpFitter::setZLineShapes(TH1 *hZPass, TH1 *hZFail ) {
   RooDataHist rooPass("hGenZPass","hGenZPass",*_work->var("x"),hZPass);
   RooDataHist rooFail("hGenZFail","hGenZFail",*_work->var("x"),hZFail);
+  _work->import(rooPass) ;
+  _work->import(rooFail) ;  
+}
+
+void tnpFitter::setTotalBkgShapes(TH1 *hBkgPass, TH1 *hBkgFail ) {
+  RooDataHist rooPass("hTotBkgPass","hTotBkgPass",*_work->var("x"),hBkgPass);
+  RooDataHist rooFail("hTotBkgFail","hTotBkgFail",*_work->var("x"),hBkgFail);
   _work->import(rooPass) ;
   _work->import(rooFail) ;  
 }

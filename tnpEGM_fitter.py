@@ -54,6 +54,7 @@ parser.add_argument('--flag'       , default = None       , help ='WP to test')
 parser.add_argument('--era'        , type=str, default = '', choices=["BtoF", "GtoH"], help ='era to perform tnp fits for')
 parser.add_argument('--inputMC'    , type=str, default = '', help = "MC input file which contains 3d histograms")
 parser.add_argument('--inputData'  , type=str, default = '', help = "Data input file which contains 3d histograms")
+parser.add_argument('--inputBkg'   , type=str, default = '', help = "Background input file which contains 3d histograms")
 parser.add_argument('--outdir'     , type=str, default=None,
                     help="name of the output folder (if not passed, a default one is used, which has the time stamp in it)")
 parser.add_argument('--useTrackerMuons', action='store_true'  , help = 'Measuring efficiencies specific for tracker muons (different tunings needed')
@@ -309,6 +310,12 @@ samples_dy = tnpSample(mcName,
                        args.inputMC,
                        f"{outputDirectory}/{mcName}_{args.flag}.root",
                        True)
+
+bkg_name = f"mu_mcBkg_{eraMC}"
+samples_bkg = tnpSample(bkg_name,
+                        args.inputBkg,
+                        f"{outputDirectory}/{bkg_name}_{args.flag}.root",
+                        True)
 #samples_data.printConfig()
 #samples_dy.printConfig()
 
@@ -331,7 +338,8 @@ if args.createHists:
 samplesDef = {
     'data'   : samples_data,
     'mcNom'  : samples_dy,
-    'mcAltSig'  : None, 
+    'mcAltSig'  : None,
+    'mcBkg'  : samples_bkg,
     #'tagSel' : None,
 }
 
@@ -409,6 +417,7 @@ for s in samplesDef.keys():
     sample =  samplesDef[s]
     if sample is None: continue
     setattr( sample, 'mcRef'     , sampleMC )
+    if args.altBkg: setattr( sample, 'bkgRef'    , samplesDef['mcBkg'] )
     setattr( sample, 'nominalFit', '%s/%s_%s_nominalFit.root' % ( outputDirectory , sample.getName(), args.flag ) )
     setattr( sample, 'altSigFit' , '%s/%s_%s_altSigFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
     setattr( sample, 'altBkgFit' , '%s/%s_%s_altBkgFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
@@ -460,8 +469,8 @@ if  args.doFit:
             elif not args.mcSig:
                 # do this only for data
                 if args.altBkg:
-                    fitUtils.histFitterAltBkg(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                              useAllTemplateForFail, maxFailIntegralToUseAllProbe, bkgShapes=bkgShapes)
+                    fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
+                                              useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints)
                 else:
                     fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
                                                useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
