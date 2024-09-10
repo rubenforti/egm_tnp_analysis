@@ -312,25 +312,17 @@ def histFitterAltBkg( sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60
 
     analyticPhysicsShape = False
 
-    '''
     defaultBkgShapes = [
         "Exponential::bkgPass(x, expalphaP)",
         "Exponential::bkgFail(x, expalphaF)",
     ]
-    '''
 
-    defaultBkgShapes = [
-        "RooHistPdf::bkgPass(x, hTotBkgPass, 0)",
-        "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
-    ]
-        
     tnpWorkspaceFunc = [
         "Gaussian::sigResPass(x,meanP,sigmaP)",
         "Gaussian::sigResFail(x,meanF,sigmaF)",
-    ]
+        ]
 
-    tnpWorkspaceFunc.extend(defaultBkgShapes)
-
+    tnpWorkspaceFunc.extend(bkgShapes if len(bkgShapes) else defaultBkgShapes)
 
     tnpWorkspace = []
     tnpWorkspace.extend(tnpWorkspaceParam)
@@ -375,15 +367,6 @@ def histFitterAltBkg( sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60
 
     fitter.setZLineShapes(histZLineShapeP,histZLineShapeF)
     fileTruth.Close()
-
-
-    #background template histogram
-    fileTotalBkg = ROOT.TFile(sample.bkgRef.getOutputPath(),'read')
-    histTotalBkgP = fileTotalBkg.Get('%s_Pass'%tnpBin['name'])
-    histTotalBkgF = fileTotalBkg.Get('%s_Fail'%tnpBin['name'])
-
-    fitter.setTotalBkgShapes(histTotalBkgP,histTotalBkgF)
-    fileTotalBkg.Close()
 
     if len(constrainPars):
         tnpWorkspace.extend(constrainPars)
@@ -415,13 +398,18 @@ def histFitterAltBkg( sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60
 def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60, massmax=120, useAllTemplateForFail=False, maxFailIntegralToUseAllProbe=-1, constrainPars=[]):
 
     analyticPhysicsShape = False
+
+    defaultBkgShapes = [
+        "RooHistPdf::bkgPass(x, hTotBkgPass, 0)",
+        "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
+    ]
         
     tnpWorkspaceFunc = [
         "Gaussian::sigResPass(x,meanP,sigmaP)",
         "Gaussian::sigResFail(x,meanF,sigmaF)",
         ]
-
-
+    
+    tnpWorkspaceFunc.extend(defaultBkgShapes)
 
     tnpWorkspace = []
     tnpWorkspace.extend(tnpWorkspaceParam)
@@ -466,6 +454,14 @@ def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, mas
 
     fitter.setZLineShapes(histZLineShapeP,histZLineShapeF)
     fileTruth.Close()
+
+    #background template histogram
+    fileTotalBkg = ROOT.TFile(sample.bkgRef.getOutputPath(),'read')
+    histTotalBkgP = fileTotalBkg.Get('%s_Pass'%tnpBin['name'])
+    histTotalBkgF = fileTotalBkg.Get('%s_Fail'%tnpBin['name'])
+
+    fitter.setTotalBkgShapes(histTotalBkgP,histTotalBkgF)
+    fileTotalBkg.Close()
 
     if len(constrainPars):
         tnpWorkspace.extend(constrainPars)

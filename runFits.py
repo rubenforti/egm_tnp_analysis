@@ -5,7 +5,7 @@ import subprocess
 import time
 import argparse
 
-def runCommands(wp, era, inputMC, inputData, options):
+def runCommands(wp, era, inputMC, inputData, options, inputBkg=None):
     outdir = options.outdir
     pretend = options.dryRun
     print()
@@ -16,17 +16,21 @@ def runCommands(wp, era, inputMC, inputData, options):
     opt_f = '--flag='+wp
     opt_iMC = '--inputMC='+inputMC
     opt_iData = '--inputData='+inputData
+    if inputBkg:
+        opt_iBkg = '--inputBkg='+inputBkg
+    else:
+        opt_iBkg = ''
     cmds = []
     ex = 'tnpEGM_fitter.py'
-    cmds.append(['python', ex, opt_e, opt_f, '--createBins'                   ])
-    cmds.append(['python', ex, opt_e, opt_f, opt_iMC , opt_iData , '--createHists'])
-    cmds.append(['python', ex, opt_e, opt_f, '--doFit',                        ])
+    cmds.append(['python3', ex, opt_e, opt_f, '--createBins'                   ])
+    cmds.append(['python3', ex, opt_e, opt_f, opt_iMC , opt_iData , '--createHists'])
+    #cmds.append(['python', ex, opt_e, opt_f, '--doFit',                        ])
     #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig'                        ])
-    cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altSig'])
-    cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altSig'])
+    #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altSig'])
+    #cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altSig'])
     #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altBkg'])
-    #cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altBkg'])
-    cmds.append(['python', ex, opt_e, opt_f, '--sumUp'                        ])
+    cmds.append(['python3', ex, opt_e, opt_f, '--doFit',             '--altBkg'])
+    cmds.append(['python3', ex, opt_e, opt_f, '--sumUp'                        ])
 
     for cmd in cmds:
         if args.onlySumUp and "--sumUp" not in cmd:
@@ -85,6 +89,13 @@ working_points_global = {
                      '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_veto_data_vertexWeights1_oscharge1.root'],
 }
 
+working_points_new = {
+    'mu_reco_plus': ['steve_histograms_2016/reco/tnp_recoplus_mc_vertexWeights1_genMatching1_oscharge1.root',
+                     'steve_histograms_2016/reco/tnp_recoplus_data_vertexWeights1_genMatching1_oscharge1.root',
+                     'steve_histograms_2016/reco/tnp_recoplus_bkg_vertexWeights1_genMatching0_oscharge1.root'],
+}
+
+
 working_points_tracker = {
     'mu_reco_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/trackerMuons_highPurity_allWP/tnp_reco_mc_vertexWeights1_oscharge1.root',
                      '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/trackerMuons_highPurity_allWP/tnp_reco_data_vertexWeights1_oscharge1.root'],
@@ -103,7 +114,6 @@ working_points_tracker = {
     'mu_veto_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/trackerMuons_highPurity_allWP/tnp_veto_mc_vertexWeights1_oscharge1.root',
                      '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/trackerMuons_highPurity_allWP/tnp_veto_data_vertexWeights1_oscharge1.root'],
 }
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-o',  '--outdir', default=None, type=str,
@@ -129,7 +139,9 @@ if args.exclude and args.steps:
     quit()
 
 eras = args.era
-working_points = working_points_tracker if args.useTrackerMuons else working_points_global
+#working_points = working_points_tracker if args.useTrackerMuons else working_points_global
+working_points = working_points_tracker if args.useTrackerMuons else working_points_new
+
 
 stepsToRun = []
 if args.steps:
@@ -153,7 +165,11 @@ for e in eras:
             continue
         inputMC = working_points[wp][0]
         inputData = working_points[wp][1]
-        runCommands( wp, e, inputMC, inputData, args)
+        if len(working_points[wp]) == 3:
+            inputBkg = working_points[wp][2]
+        else:
+            inputBkg = None
+        runCommands( wp, e, inputMC, inputData, args, inputBkg=inputBkg)
 
 elapsed = time.time() - tstart
 elapsed_cpu = time.process_time() - cpustrat
