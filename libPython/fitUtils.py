@@ -395,12 +395,12 @@ def histFitterAltBkg( sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60
 #############################################################
 ########## alternate background fitter with template model
 #############################################################
-def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60, massmax=120, useAllTemplateForFail=False, maxFailIntegralToUseAllProbe=-1, constrainPars=[]):
+def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60, massmax=120, useAllTemplateForFail=False, maxFailIntegralToUseAllProbe=-1, bkgShapes=[]):
 
     analyticPhysicsShape = False
 
     defaultBkgShapes = [
-        "RooHistPdf::bkgPass(x, hTotBkgPass, 0)",
+        "Exponential::bkgPass(x, expalphaP)",
         "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
     ]
         
@@ -409,14 +409,11 @@ def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, mas
         "Gaussian::sigResFail(x,meanF,sigmaF)",
         ]
     
-    tnpWorkspaceFunc.extend(defaultBkgShapes)
+    tnpWorkspaceFunc.extend(bkgShapes if len(bkgShapes) else defaultBkgShapes)
 
     tnpWorkspace = []
     tnpWorkspace.extend(tnpWorkspaceParam)
     tnpWorkspace.extend(tnpWorkspaceFunc)
-
-    if len(constrainPars):
-        tnpWorkspace.extend(constrainPars)
     
     ## init fitter
     infile = ROOT.TFile(sample.getOutputPath(),'read')
@@ -462,19 +459,6 @@ def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, mas
 
     fitter.setTotalBkgShapes(histTotalBkgP,histTotalBkgF)
     fileTotalBkg.Close()
-
-    if len(constrainPars):
-        tnpWorkspace.extend(constrainPars)
-        # ugly, just to define constraints for passing or failing
-        constraints = {"constrainP" : "",
-                       "constrainF" : ""}
-        cpass = list(filter(lambda x :  "constrainP" in x, constrainPars))
-        cfail = list(filter(lambda x :  "constrainF" in x, constrainPars))
-        constraints = {"constrainP" : ",".join([x.split("::")[1].split("(")[0] for x in cpass]),
-                       "constrainF" : ",".join([x.split("::")[1].split("(")[0] for x in cfail])}
-        for key in constraints.keys():
-            if len(constraints[key]):
-                fitter.updateConstraints(key, constraints[key])
 
     ### set workspace
     workspace = ROOT.vector("string")()

@@ -225,8 +225,8 @@ void tnpFitter::setZLineShapes(TH1 *hZPass, TH1 *hZFail ) {
 }
 
 void tnpFitter::setTotalBkgShapes(TH1 *hBkgPass, TH1 *hBkgFail ) {
-  RooDataHist rooPass("hTotBkgPass","hTotBkgPass",*_work->var("x"),hBkgPass);
-  RooDataHist rooFail("hTotBkgFail","hTotBkgFail",*_work->var("x"),hBkgFail);
+  RooDataHist rooPass("hTotBkgPass","hTotBkgPass",*_work->var("x"), hBkgPass);
+  RooDataHist rooFail("hTotBkgFail","hTotBkgFail",*_work->var("x"), hBkgFail);
   _work->import(rooPass) ;
   _work->import(rooFail) ;  
 }
@@ -352,30 +352,32 @@ RooFitResult* tnpFitter::manageFit(bool isPass, int attempt = 0, std::string* la
     RooAbsData* dh =  _work->data(hName.c_str());
     RooFitResult* res = pdf->fitTo(*dh,
                                    // Minos(_work->argSet(sigPar.c_str())),
-                                   _useMinos ? Minos(_work->argSet(sigPar.c_str())) : Minos(kFALSE),
-                                   (_useMinos or not _isMC) ? SumW2Error(kFALSE) : SumW2Error(kTRUE), // try always false
-                                   //SumW2Error(kFALSE), // default is false, but needs it explicitly for MC otherwise roofit complains
+                                   Minos(kFALSE),
+                                   //(_useMinos or not _isMC) ? SumW2Error(kFALSE) : SumW2Error(kTRUE), // try always false
+                                   SumW2Error(kFALSE), // default is false, but needs it explicitly for MC otherwise roofit complains
                                    Save(),
                                    Range("fitMassRange"),
                                    Minimizer("Minuit2"),
                                    Strategy(isPass ? _strategyPassFit : _strategyFailFit),
                                    PrintLevel(_printLevel),
-                                   (constraint != nullptr) ? ExternalConstraints(*constraint) : RooCmdArg::none() );
+                                   (constraint != nullptr) ? ExternalConstraints(*constraint) : RooCmdArg::none()
+                                   );
 
     RooChi2Var chi2("chi2", "chi2 var", *pdf, *((RooDataHist*) dh), Range(_xFitMin,_xFitMax));
     *chi2value = chi2.getVal();
     int ndof = _nFitBins - res->floatParsFinal().getSize();
     double chi2sigma = std::sqrt(2. * ndof);
     bool goodChi2 = std::fabs(*chi2value - (double) ndof) < (10.0 * chi2sigma); 
-    // std::cout << pdfName << " --> Chi2 / ndof = " << chi2.getVal() << " / " << ndof << "   good chi2 = " << goodChi2 << std::endl;
-    // std::cout << pdfName << " --> status = " << res->status() << std::endl;
-    // std::cout << pdfName << " --> cov. quality = " << res->covQual() << std::endl;
+    //std::cout << pdfName << " --> Chi2 / ndof = " << chi2.getVal() << " / " << ndof << "   good chi2 = " << goodChi2 << std::endl;
+    //std::cout << pdfName << " --> status = " << res->status() << std::endl;
+    //std::cout << pdfName << " --> cov. quality = " << res->covQual() << std::endl;
 
     if (attempt > 0) return res;
 
     if (_isMC) {
         if (goodChi2 and (res->status() == 0 or res->status() == 1)) return res;
-    } else {
+    } 
+    else {
         if (goodChi2 and res->covQual() == 3 and (res->status() == 0 or res->status() == 1)) return res;
     }
     //std::cout << "Failed fit for " << pdfName << ": trying again ..." << std::endl;
@@ -397,7 +399,8 @@ RooFitResult* tnpFitter::manageFit(bool isPass, int attempt = 0, std::string* la
             setConstantVariable(bkgParNames[i], _work->var(bkgParNames[i].c_str())->getVal());
         }
         return manageFit(isPass, 1, lastNamePDF, chi2value);
-    } else {
+    } 
+    else {
         if (isPass) return res;
         else        return manageFit(isPass, 2, lastNamePDF, chi2value);
     }
@@ -435,7 +438,6 @@ int tnpFitter::fits(const std::string& title) {
   double chi2valueFail = 0.0;
   RooFitResult* resFail = manageFit(false, 0, &lastNameFailPDF, &chi2valueFail);
   // std::cout << "Last used fail pdf  -> " << lastNameFailPDF << std::endl;
-
   std::string bkgNamePass = "bkgPass";
   std::string bkgNameFail = "bkgFail";
   if (lastNamePassPDF.find("Backup") != std::string::npos) bkgNamePass += "Backup";
@@ -485,7 +487,7 @@ int tnpFitter::fits(const std::string& title) {
   resPass->Write(TString::Format("%s_resP",_histname_base.c_str()), TObject::kOverwrite);
   resFail->Write(TString::Format("%s_resF",_histname_base.c_str()), TObject::kOverwrite);
   //_fOut->Close(); // closed in the destructor
-  
+
   return 1;
 
 }

@@ -280,11 +280,17 @@ if any(x in typeflag for x in flagsWithFSR):
 
 # for now this is not used, the nominal background model has been moved to exponential already, this might become a Bernstein polynominal or something
 tnpParAltBkgFit = [
-    "meanP[-0.0,-5.0,5.0]","sigmaP[0.5,0.1,5.0]",
-    "meanF[-0.0,-10.0,10.0]","sigmaF[0.5,0.1,5.0]",
+    "meanP[-0.0,-5.0,5.0]","sigmaP[0.5,0.01,5.0]",
+    "meanF[-0.0,-3.0,3.0]","sigmaF[0.5,0.02,3.0]",
     "expalphaP[0.,-5.,5.]",
-    "expalphaF[0.,-5.,5.]",
+    #"expalphaF[0.,-5.,5.]",
     ]
+
+bkgShapesAltBkg = [
+    "Exponential::bkgPass(x, expalphaP)",
+    "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
+    "RooHistPdf::bkgFailBackup(x, hTotBkgFail, 0)",
+]
 
 if args.outdir:
     baseOutDir = '{o}/efficiencies_{era}/'.format(o=args.outdir, era=args.era)
@@ -343,7 +349,7 @@ samplesDef = {
     #'tagSel' : None,
 }
 
-#samplesDef["data"].printConfig()
+samplesDef["data"].printConfig()
 
 ## done making it more configurable
 ## ===========================================================================================
@@ -442,8 +448,10 @@ if  args.doFit:
     print(">>> running fits")
     #print('sampleToFit.dump()', sampleToFit.dump())
     # can't use all probes for cases with isolation, since the failing probe sample has the FSR and a second bump at low mass
-    useAllTemplateForFail = True if typeflag not in flagsWithFSR else False # use all probes to build MC template for failing probes when fitting data nominal
-    maxFailIntegralToUseAllProbe = 300 if typeflag not in ["tracking"] else -1 # use all probes for the failing template only when stat is very small, otherwise sometimes the fit doesn't work well
+    #useAllTemplateForFail = True if typeflag not in flagsWithFSR else False # use all probes to build MC template for failing probes when fitting data nominal
+    #maxFailIntegralToUseAllProbe = 300 if typeflag not in ["tracking"] else -1 # use all probes for the failing template only when stat is very small, otherwise sometimes the fit doesn't work well
+    useAllTemplateForFail = False
+    maxFailIntegralToUseAllProbe = -1
     altSignalFail = True if typeflag in ["tracking", "reco", "veto"] else False # use Gaussian as resolution function for altSig model
     modelFSR = True if typeflag in flagsWithFSR else False # add Gaussian to model low mass bump from FSR, in altSig fit
     def parallel_fit(ib): ## parallel
@@ -470,7 +478,7 @@ if  args.doFit:
                 # do this only for data
                 if args.altBkg:
                     fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                              useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints)
+                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, bkgShapes=bkgShapesAltBkg)
                 else:
                     fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
                                                useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
@@ -478,7 +486,7 @@ if  args.doFit:
             #     # nominal fit in MC still with analytc form but no background
             #     fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
             #                               altSignalFail=altSignalFail, modelFSR=modelFSR, zeroBackground=True)
-                    
+
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
 

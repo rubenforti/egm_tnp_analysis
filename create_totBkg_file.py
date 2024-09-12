@@ -48,7 +48,7 @@ def checkAddConsistency(sum, h_list):
             external_sum += h.GetBinContent(i)
         internal_sum = sum.GetBinContent(i)
         if external_sum != internal_sum:
-            print("UNCORRECT SUM FOR BIN", i)
+            print("INCORRECT SUM FOR BIN", i)
 
 
 
@@ -60,11 +60,9 @@ if __name__ == "__main__":
 
     eff_type = "recoplus"
 
-    base_folder = f"/home/rforti/egm_tnp_analysis/steve_histograms_2016/{eff_type.replace('plus', '').replace('minus', '')}/"
+    base_folder = f"/scratch/rforti/steve_histograms_2016/{eff_type.replace('plus', '').replace('minus', '')}/"
 
-    bkg_types = ["WW", "WZ", "ZZ", "TTSemileptonic", "TTFullyleptonic", "Ztautau", "WplusJets", "WminusJets", 
-                 #"QCD", 
-                 "Zjets"]
+    bkg_types = ["WW", "WZ", "ZZ", "TTSemileptonic", "TTFullyleptonic", "Ztautau", "WplusJets", "WminusJets", "QCD", "Zjets"]
 
     if old_Steve_version:
         bkg_types.remove("Zjets")
@@ -105,7 +103,8 @@ if __name__ == "__main__":
         print(hist_sum.Integral())
         hist_sum.Reset()
         print(hist_sum.Integral())
-
+        hist_sum.SetName(f"{fl}_mu_mcBkg_postVFP")
+        hist_sum.SetTitle(f"{fl}_mu_mcBkg_postVFP")
         for h in histos:
             hist_sum.Add(h)
 
