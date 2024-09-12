@@ -112,7 +112,8 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
     effis = {}
     effis_canvas = {}
     binName = bindef["name"]
-    canvasesToGet = ["dataNominal", "dataAltSig", "mcAltSig"]
+    #canvasesToGet = ["dataNominal", "dataAltSig", "dataAltBkg", "mcAltSig"]
+    canvasesToGet = ["dataNominal", "dataAltSig", "dataAltBkg"]
     for key in info.keys():
         value = info[key]
         if value is None or not os.path.isfile(value):
@@ -195,6 +196,77 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
     txt.DrawLatex(0.01, 0.97, '{n}'.format(n=bindef['name'].replace('_',' ').replace('To', '-').replace('probe ', '').replace('m','-').replace('pt','XX').replace('p','.').replace('XX','p_{T}')))
     txt.SetTextSize(0.08)
     ipad = 1
+    for ip, p in enumerate(effis_canvas["canv_dataNominal"].GetListOfPrimitives()):  # Draw the data_nominal, with info on the MC counting efficiency
+        if not ip: continue
+        canv_all.cd(ipad)
+        newp = p.Clone(f"tmp_dataNominal_{ip}")
+        newp.SetPad(0.05, 0.00, 0.95, 0.90)
+        newp.Draw()
+        ipad += 1
+    canv_all.cd(ipad)
+    tmp = effis['dataNominal']
+    txt.SetTextFont(62)
+    txt.DrawLatex(0.00, 0.85, 'data nominal:')
+    txt.SetTextFont(42)
+    txt.DrawLatex(0.10, 0.75, 'passing: {n:.1f} #pm {ne:.1f}'.format(n=tmp[2],ne=tmp[4]))
+    txt.DrawLatex(0.10, 0.64, 'failing: {n:.1f} #pm {ne:.1f}'.format(n=tmp[3],ne=tmp[5]))
+    txt.SetTextFont(62)
+    txt.DrawLatex(0.10, 0.53, 'efficiency: {e:.2f} #pm {ee:.2f} %'.format(e=tmp[0]*100., ee=tmp[1]*100.))
+    txt.SetTextFont(42)
+    tmp = effis['mcNominal']
+    txt.SetTextFont(62)
+    txt.DrawLatex(0.00, 0.35, 'MC counting efficiency:')
+    txt.SetTextFont(42)
+    txt.DrawLatex(0.10, 0.24, 'passing: {n:.1f} #pm {ne:.1f}'.format(n=tmp[2],ne=tmp[4]))
+    txt.DrawLatex(0.10, 0.13, 'failing: {n:.1f} #pm {ne:.1f}'.format(n=tmp[3],ne=tmp[5]))
+    txt.SetTextFont(62)
+    txt.DrawLatex(0.10, 0.02, 'efficiency: {e:.2f} #pm {ee:.2f} %'.format(e=tmp[0]*100., ee=tmp[1]*100.))
+    txt.SetTextFont(42) 
+    ipad += 1
+    for ip, p in enumerate(effis_canvas["canv_dataAltSig"].GetListOfPrimitives()):   # Draw the data_alt_signal
+        if not ip: continue
+        canv_all.cd(ipad)
+        newp = p.Clone(f"tmp_dataAltSig_{ip}")
+        newp.SetPad(0.05, 0.00, 0.95, 0.90)
+        newp.Draw()
+        ipad+=1
+    canv_all.cd(ipad)
+    tmp = effis['dataAltSig']
+    txt.SetTextFont(62)
+    txt.DrawLatex(0.00, 0.65, 'data alt. signal:')
+    txt.SetTextFont(42)
+    txt.DrawLatex(0.10, 0.54, 'passing: {n:.1f} #pm {ne:.1f}'.format(n=tmp[2],ne=tmp[4]))
+    txt.DrawLatex(0.10, 0.43, 'failing: {n:.1f} #pm {ne:.1f}'.format(n=tmp[3],ne=tmp[5]))
+    txt.SetTextFont(62)
+    txt.DrawLatex(0.10, 0.32, 'efficiency: {e:.2f} #pm {ee:.2f} %'.format(e=tmp[0]*100., ee=tmp[1]*100.))
+    txt.SetTextFont(42)
+    ipad+=1
+    for ip, p in enumerate(effis_canvas["canv_dataAltBkg"].GetListOfPrimitives()):   # Draw the data_alt_background
+        if not ip: continue
+        canv_all.cd(ipad)
+        newp = p.Clone(f"tmp_dataAltBkg_{ip}")
+        newp.SetPad(0.05, 0.00, 0.95, 0.90)
+        newp.Draw()
+        ipad += 1
+    canv_all.cd(ipad)
+    tmp = effis['dataAltBkg']
+    txt.SetTextFont(62)
+    txt.DrawLatex(0.00, 0.65, 'data alt. background:')
+    txt.SetTextFont(42)
+    txt.DrawLatex(0.10, 0.54, 'passing: {n:.1f} #pm {ne:.1f}'.format(n=tmp[2],ne=tmp[4]))
+    txt.DrawLatex(0.10, 0.43, 'failing: {n:.1f} #pm {ne:.1f}'.format(n=tmp[3],ne=tmp[5]))
+    txt.SetTextFont(62)
+    txt.DrawLatex(0.10, 0.32, 'efficiency: {e:.2f} #pm {ee:.2f} %'.format(e=tmp[0]*100., ee=tmp[1]*100.))
+    txt.SetTextFont(42)
+    canv_all.SaveAs(outputDirectory+'/plots/{n}_all.pdf'.format(n=bindef['name']))
+    canv_all.SaveAs(outputDirectory+'/plots/{n}_all.png'.format(n=bindef['name']))
+    
+    '''
+    ## ----------------------------------------------------------------------------
+    ## OLD VERSION: the first canvases are of the fit on MC, that is no longer used
+    ## ----------------------------------------------------------------------------          
+
+    ipad = 1
     # for ip, p in enumerate(padsFromCanvas["canv_mcAltSig"]):
     for ip, p in enumerate(effis_canvas["canv_mcAltSig"].GetListOfPrimitives()):
         if not ip: continue
@@ -262,6 +334,7 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
     txt.SetTextFont(42)
     canv_all.SaveAs(outputDirectory+'/plots/{n}_all.pdf'.format(n=bindef['name']))
     canv_all.SaveAs(outputDirectory+'/plots/{n}_all.png'.format(n=bindef['name']))
+    '''
     # not sure if the following helps removing crashes
     #canv_all = None
     #canv_all.Clear()

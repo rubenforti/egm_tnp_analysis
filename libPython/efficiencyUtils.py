@@ -19,7 +19,7 @@ class efficiency:
         self.altEff  = [-1]*7
         self.syst    = [-1]*7
     
-    def __init__(self,ptBin,etaBin,effData,errEffData,effMC,errEffMC,effAltBkgModel,effAltSigModel,errAltSigModel,effAltMCSignal,errAltMCSig,effAltTagSel):
+    def __init__(self,ptBin,etaBin,effData,errEffData,effMC,errEffMC,effAltSigModel,errAltSigModel,effAltBkgModel,errAltBkgModel,effAltMCSignal,errAltMCSig,effAltTagSel):
         self.ptBin      = ptBin
         self.etaBin     = etaBin
         self.effData    = effData
@@ -28,6 +28,8 @@ class efficiency:
         self.errEffMC   = errEffMC
         self.effAltSig = effAltSigModel
         self.errAltSig = errAltSigModel
+        self.effAltBkg = effAltBkgModel
+        self.errAltBkg = errAltBkgModel
         self.effAltSigMC = effAltMCSignal
         self.errAltSigMC = errAltMCSig
         self.altEff = [-1]*7
@@ -40,12 +42,13 @@ class efficiency:
     def __str__(self):
         return '%2.3f\t%2.3f\t%2.1f\t%2.1f\t%2.4f\t%2.4f\t%2.4f\t%2.4f\t%2.4f\t%2.4f\t%2.4f\t%2.4f' % (self.etaBin[0],self.etaBin[1],
                                                                                                        self.ptBin[0] ,self.ptBin[1] ,
-                                                                                                       self.effData, self.errEffData, self.effMC, self.errEffMC,
-                                                                                                       self.altEff[0],self.altEff[1], self.altEff[2], self.altEff[3] )
+                                                                                                       self.effData, self.errEffData, 
+                                                                                                       self.effMC, self.errEffMC,
+                                                                                                       self.altEff[0],self.altEff[1],self.altEff[2],self.altEff[3])
 
     @staticmethod
     def getSystematicNames():
-        return [ 'statData', 'statMC', 'altBkgModel', 'altSignalModel', 'altMCEff', 'altTagSelection' ]
+        return [ 'statData', 'statMC', 'altSignalModel', 'altBkgModel', 'altMCEff', 'altTagSelection']
 
 
 
@@ -269,6 +272,9 @@ class efficiencyList:
             htitle = 'lepton efficiencies data altSig'
             hname  = 'h2_effDataAltSig'
         if onlyError   == 43 :
+            htitle = 'lepton efficiencies data altBkg'
+            hname  = 'h2_effDataAltBkg'
+        if onlyError   == 44 :
             htitle = 'lepton efficiencies MC altSig'
             hname  = 'h2_effMCAltSig'             
         if onlyError   == 50 :
@@ -281,6 +287,9 @@ class efficiencyList:
             htitle = 'lepton eff. stat. unc. data altSig'
             hname  = 'h2_statUncEffDataAltSig'
         if onlyError   == 53 :
+            htitle = 'lepton eff. stat. unc. data altBkg'
+            hname  = 'h2_statUncEffDataAltBkg'
+        if onlyError   == 54 :
             htitle = 'lepton eff. stat. unc. MC altSig'
             hname  = 'h2_statUncEffMCAltSig'             
 
@@ -351,6 +360,9 @@ class efficiencyList:
                             h2.SetBinContent(ix,iy, self.effList[ptBin][etaBin].effAltSig)
                             h2.SetBinError  (ix,iy, self.effList[ptBin][etaBin].errAltSig)
                         if onlyError   == 43 :
+                            h2.SetBinContent(ix,iy, self.effList[ptBin][etaBin].effAltBkg)
+                            h2.SetBinError  (ix,iy, self.effList[ptBin][etaBin].errAltBkg)
+                        if onlyError   == 44 :
                             h2.SetBinContent(ix,iy, self.effList[ptBin][etaBin].effAltSigMC)
                             h2.SetBinError  (ix,iy, self.effList[ptBin][etaBin].errAltSigMC)
                         if onlyError   == 50 :
@@ -360,6 +372,8 @@ class efficiencyList:
                         if onlyError   == 52 :
                             h2.SetBinContent  (ix,iy, self.effList[ptBin][etaBin].errAltSig)
                         if onlyError   == 53 :
+                            h2.SetBinContent  (ix,iy, self.effList[ptBin][etaBin].errAltBkg)
+                        if onlyError   == 54 :
                             h2.SetBinContent  (ix,iy, self.effList[ptBin][etaBin].errAltSigMC)
 
         h2.GetXaxis().SetTitle("#eta")

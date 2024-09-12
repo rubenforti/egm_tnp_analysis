@@ -567,6 +567,7 @@ if args.sumUp:
     #print('this is the dump of sampleToFit:')
     #sampleToFit.dump()
     #pprint(vars(sampleToFit.mcRef))
+
     #print('done with dump')
     info = {
         #'data'        : sampleToFit.getOutputPath(),
@@ -576,7 +577,7 @@ if args.sumUp:
         'mcNominal'   : sampleToFit.mcRef.getOutputPath(),
         'mcNominal_fit': sampleToFit.mcRef.nominalFit,
         'mcAltSig'    : sampleToFit.mcRef.altSigFit,
-        'mcAltBkg'    : sampleToFit.mcRef.altBkgFit,
+        'mcAltBkg'    : sampleToFit.mcRef.altBkgFit, # not used
         'tagSel'      : None
         }
 
@@ -589,13 +590,14 @@ if args.sumUp:
     #print(info)
 
     effFileName = outputDirectory+'/allEfficiencies.txt'
+
     # security check, if the code crashes the temporary files are still present, let's remove them before executing parallel_sumUp
     if any ("_tmpTMP_" in f for f in os.listdir(outputDirectory)):
         os.system(f"rm {effFileName}_tmpTMP_*")
             
     #fOut = open( effFileName,'w')
     def parallel_sumUp(_bin):
-        effis = tnpRoot.getAllEffi( info, _bin, outputDirectory, saveCanvas=True)
+        effis = tnpRoot.getAllEffi(info, _bin, outputDirectory, saveCanvas=True)
         #print("effis =",effis)
         #print('this is _bin', _bin)        
         ### formatting assuming 2D bining -- to be fixed
@@ -611,23 +613,27 @@ if args.sumUp:
             fOut.write( astr )
             astr = '### var2 : %s\n' % v2Range[1]
             fOut.write( astr )
-            exp = '{v0:8s}\t{v1:8s}\t{v2:8s}\t{v3:8s}\t{edv:10s}\t{ede:10s}\t{emcv:10s}\t{emce:10s}\t{edalts:15s}\t{edaltse:15s}\t{emcalt:15s}\t{emcalte:15s}\t{edaltb:15s}\t{etagsel:10s}\n'.format(
+            #exp = '{v0:8s}\t{v1:8s}\t{v2:8s}\t{v3:8s}\t{edaltb:10s}\t{edaltbe:10s}\t{emcv:10s}\t{emce:10s}\n'.format( 
+            exp = '{v0:8s}\t{v1:8s}\t{v2:8s}\t{v3:8s}\t{edv:10s}\t{ede:10s}\t{emcv:10s}\t{emce:10s}\t{edalts:15s}\t{edaltse:15s}\t{edaltb:15s}\t{edaltbe:15s}\t{emcalt:15s}\t{emcalte:15s}\t{etagsel:10s}\n'.format(
                 v0='var1min', v1='var1max', v2='var2min', v3='var2max',
                 edv='eff data', ede='err data',
                 emcv='eff mc', emce='err mc',
                 edalts='eff data altS', edaltse='err data altS',
-                emcalt='eff mc alt', emcalte='err mc alt', edaltb='eff data altB', etagsel='eff tag sel')
+                edaltb='eff data altB', edaltbe='err data altB',
+                emcalt='eff mc alt', emcalte='err mc alt',
+                etagsel='eff tag sel'
+                )
             #print(exp)
             fOut.write(exp)
 
-        astr =  '%-+8.3f\t%-+8.3f\t%-+8.3f\t%-+8.3f\t%-10.6f\t%-10.6f\t%-10.6f\t%-10.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-10.5f' % (
+        astr =  '%-+8.3f\t%-+8.3f\t%-+8.3f\t%-+8.3f\t%-10.6f\t%-10.6f\t%-10.6f\t%-10.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-10.5f' % (
             float(v1Range[0]), float(v1Range[2]),
             float(v2Range[0]), float(v2Range[2]),
             effis['dataNominal'][0],effis['dataNominal'][1],
             effis['mcNominal'  ][0],effis['mcNominal'  ][1],
             effis['dataAltSig' ][0],effis['dataAltSig' ][1],
+            effis['dataAltBkg' ][0], effis['dataAltBkg' ][1],
             effis['mcAltSig' ][0], effis['mcAltSig' ][1],
-            effis['dataAltBkg' ][0],
             effis['tagSel'][0],
             )
         #print(astr)

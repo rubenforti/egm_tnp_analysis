@@ -321,15 +321,13 @@ def doSFs(filein, lumi, axis = ['pT','eta'], plotdir='' ):
             etaKey = ( float(numbers[0]), float(numbers[1]) )
             ptKey  = ( float(numbers[2]), min(500,float(numbers[3])) )
         
-            myeff = efficiency( ptKey,etaKey,
-                                float(numbers[4]),float(numbers[5]), ## data eff and error
-                                float(numbers[6]),float(numbers[7]), ## mc eff and error
-                                float(numbers[12]), ## eff data alt bkg model
-                                float(numbers[8] ), float(numbers[9]), ## eff data alt sig model and error 
-                                float(numbers[10]),float(numbers[11]), ## eff mc alt sig model and error 
-                                float(numbers[13]) )
-#                           float(numbers[8]),float(numbers[9]),float(numbers[10]), -1 )
-
+            myeff = efficiency( ptKey, etaKey,
+                                float(numbers[4]), float(numbers[5]), ## data eff and error
+                                float(numbers[6]), float(numbers[7]), ## mc eff and error
+                                float(numbers[8]), float(numbers[9]),    ## data_alt_sig eff and error
+                                float(numbers[10]), float(numbers[11]),  ## data_alt_bkg eff and error
+                                float(numbers[12]), float(numbers[13]),  ## eff_alt_sig eff and error
+                                float(numbers[14]) )
             effGraph.addEfficiency(myeff)
 
     fileWithEff.close()
@@ -366,7 +364,7 @@ def doSFs(filein, lumi, axis = ['pT','eta'], plotdir='' ):
 #EffiGraph1D( effGraph.pt_1DGraph_list_customEtaBining(customEtaBining,False) , 
 #             effGraph.pt_1DGraph_list_customEtaBining(customEtaBining,True)   , False, pdfout )
 #    EffiGraph1D( effGraph.eta_1DGraph_list(False), effGraph.eta_1DGraph_list(True), True , pdfout )
-    listOfSF1D .extend( EffiGraph1D( effGraph.eta_1DGraph_list( typeGR =  0 ) , # eff Data
+    listOfSF1D.extend( EffiGraph1D( effGraph.eta_1DGraph_list( typeGR =  0 ) , # eff Data
                               effGraph.eta_1DGraph_list( typeGR = -1 ) , # eff MC
                               effGraph.eta_1DGraph_list( typeGR = +1 ) , # SF
                               pdfout, 
@@ -375,11 +373,13 @@ def doSFs(filein, lumi, axis = ['pT','eta'], plotdir='' ):
     h2EffData       = effGraph.ptEtaScaleFactor_2DHisto(40)
     h2EffMC         = effGraph.ptEtaScaleFactor_2DHisto(41)
     h2EffDataAltSig = effGraph.ptEtaScaleFactor_2DHisto(42)
-    h2EffMCAltSig   = effGraph.ptEtaScaleFactor_2DHisto(43)
+    h2EffDataAltBkg   = effGraph.ptEtaScaleFactor_2DHisto(43)
+    h2EffMCAltSig   = effGraph.ptEtaScaleFactor_2DHisto(44)
     h2StatUncEffData       = effGraph.ptEtaScaleFactor_2DHisto(50)
     h2StatUncEffMC         = effGraph.ptEtaScaleFactor_2DHisto(51)
     h2StatUncEffDataAltSig = effGraph.ptEtaScaleFactor_2DHisto(52)
-    h2StatUncEffMCAltSig   = effGraph.ptEtaScaleFactor_2DHisto(53)
+    h2StatUncEffDataAltBkg   = effGraph.ptEtaScaleFactor_2DHisto(53)
+    h2StatUncEffMCAltSig   = effGraph.ptEtaScaleFactor_2DHisto(54)
     #h2SF      = effGraph.ptEtaScaleFactor_2DHisto(-1)
     h2SF = h2EffData.Clone('h2_SF_nominal');
     h2SF.SetTitle('SF nominal data / nominal MC')
@@ -387,6 +387,9 @@ def doSFs(filein, lumi, axis = ['pT','eta'], plotdir='' ):
     h2SFDataAltSig = h2EffDataAltSig.Clone('h2_SF_dataAltSig');
     h2SFDataAltSig.SetTitle('SF altSig data / nominal MC')
     h2SFDataAltSig.Divide(h2EffMC)
+    h2SFDataAltBkg = h2EffDataAltBkg.Clone('h2_SF_dataAltBkg');
+    h2SFDataAltBkg.SetTitle('SF altBkg data / nominal MC')
+    h2SFDataAltBkg.Divide(h2EffMC)
     h2SFMCAltSig = h2EffData.Clone('h2_SF_MCAltSig');
     h2SFMCAltSig.SetTitle('SF nominal data / altSig MC')
     h2SFMCAltSig.Divide(h2EffMCAltSig)
@@ -436,6 +439,7 @@ def doSFs(filein, lumi, axis = ['pT','eta'], plotdir='' ):
     h2EffDataAltSig.Write('EffDataAltSig2D', rt.TObject.kOverwrite)
     h2EffMCAltSig  .Write('EffMCAltSig2D'  , rt.TObject.kOverwrite)
     h2SFDataAltSig.Write('SF2D_dataAltSig', rt.TObject.kOverwrite)
+    h2SFDataAltBkg.Write('SF2D_dataAltBkg', rt.TObject.kOverwrite)
     h2SFMCAltSig.Write('SF2D_MCAltSig', rt.TObject.kOverwrite)
     h2SFDataMCAltSig.Write('SF2D_dataMCAltSig', rt.TObject.kOverwrite)
     for igr in listOfSF1D:
@@ -447,7 +451,7 @@ def doSFs(filein, lumi, axis = ['pT','eta'], plotdir='' ):
 
     cDummy.Print( pdfout + "]" )
 
-    allEffsAndSFs= [h2SF, h2EffData, h2EffMC, h2EffDataAltSig, h2EffMCAltSig, h2SFDataAltSig, h2SFMCAltSig, h2SFDataMCAltSig, h2StatUncEffData, h2StatUncEffMC, h2StatUncEffDataAltSig, h2StatUncEffMCAltSig]
+    allEffsAndSFs= [h2SF, h2EffData, h2EffMC, h2EffDataAltSig, h2EffDataAltBkg, h2EffMCAltSig, h2SFDataAltSig, h2SFDataAltBkg, h2SFMCAltSig, h2SFDataMCAltSig, h2StatUncEffData, h2StatUncEffMC, h2StatUncEffDataAltSig, h2StatUncEffDataAltBkg, h2StatUncEffMCAltSig]
     canv = rt.TCanvas('c','c', 800, 800)
     canv.SetRightMargin(0.20)
     rt.gStyle.SetPalette(55)
