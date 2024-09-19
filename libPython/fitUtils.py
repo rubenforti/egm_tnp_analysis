@@ -395,14 +395,17 @@ def histFitterAltBkg( sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60
 #############################################################
 ########## alternate background fitter with template model
 #############################################################
-def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60, massmax=120, useAllTemplateForFail=False, maxFailIntegralToUseAllProbe=-1, bkgShapes=[]):
+def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, massmin=60, massmax=120, useAllTemplateForFail=False, maxFailIntegralToUseAllProbe=-1, constrainPars=[], bkgShapes=[], isBBfail=False):
 
     analyticPhysicsShape = False
 
-    defaultBkgShapes = [
-        "Exponential::bkgPass(x, expalphaP)",
-        "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
-    ]
+    if isBBfail is False:
+        defaultBkgShapes = ["Exponential::bkgPass(x, expalphaP)", 
+                            "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
+                            "RooHistPdf::bkgFailBackup(x, hTotBkgFail, 0)"]
+    else:
+        defaultBkgShapes = ["Exponential::bkgPass(x, expalphaP)",
+                            "RooHistPdf::bkgFailBackup(x, hTotBkgFail, 0)"]
         
     tnpWorkspaceFunc = [
         "Gaussian::sigResPass(x,meanP,sigmaP)",
@@ -414,7 +417,7 @@ def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, mas
     tnpWorkspace = []
     tnpWorkspace.extend(tnpWorkspaceParam)
     tnpWorkspace.extend(tnpWorkspaceFunc)
-    
+
     ## init fitter
     infile = ROOT.TFile(sample.getOutputPath(),'read')
     hP = infile.Get('%s_Pass' % tnpBin['name'] )
@@ -458,7 +461,28 @@ def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, mas
     histTotalBkgF = fileTotalBkg.Get('%s_Fail'%tnpBin['name'])
 
     fitter.setTotalBkgShapes(histTotalBkgP,histTotalBkgF)
+
+    if isBBfail:
+      #Only for fail
+      fitter.setBarlowBeestonBkgPdf(False)
+      constrainPars.extend(["RooHistConstraint::constrainF_histConstr(paramHistF)"])
+    
     fileTotalBkg.Close()
+    
+    print(constrainPars)
+
+    if len(constrainPars):
+        tnpWorkspace.extend(constrainPars)
+        # ugly, just to define constraints for passing or failing
+        constraints = {"constrainP" : "",
+                       "constrainF" : ""}
+        cpass = list(filter(lambda x :  "constrainP" in x, constrainPars))
+        cfail = list(filter(lambda x :  "constrainF" in x, constrainPars))
+        constraints = {"constrainP" : ",".join([x.split("::")[1].split("(")[0] for x in cpass]),
+                       "constrainF" : ",".join([x.split("::")[1].split("(")[0] for x in cfail])}
+        for key in constraints.keys():
+            if len(constraints[key]):
+                fitter.updateConstraints(key, constraints[key])
 
     ### set workspace
     workspace = ROOT.vector("string")()

@@ -236,9 +236,9 @@ elif typeflag == 'reco':
         #"Gaussian::constrainP_betaP(betaP,0.05,0.25)",
         #"Gaussian::constrainP_gammaP(gammaP,0.5,0.8)",
         # failing
-        "Gaussian::constrainF_acmsF(acmsF,90,50)",
-        "Gaussian::constrainF_betaF(betaF,5.0,25.0)",
-        "Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
+        #"Gaussian::constrainF_acmsF(acmsF,90,50)",
+        #"Gaussian::constrainF_betaF(betaF,5.0,25.0)",
+        #"Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
     ]
 
 else:
@@ -285,12 +285,13 @@ tnpParAltBkgFit = [
     "expalphaP[0.,-5.,5.]",
     #"expalphaF[0.,-5.,5.]",
     ]
-
+'''
 bkgShapesAltBkg = [
     "Exponential::bkgPass(x, expalphaP)",
     "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
     "RooHistPdf::bkgFailBackup(x, hTotBkgFail, 0)",
 ]
+'''
 
 if args.outdir:
     baseOutDir = '{o}/efficiencies_{era}/'.format(o=args.outdir, era=args.era)
@@ -478,7 +479,7 @@ if  args.doFit:
                 # do this only for data
                 if args.altBkg:
                     fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, bkgShapes=bkgShapesAltBkg)
+                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=[], isBBfail=True)
                 else:
                     fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
                                                useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
@@ -489,7 +490,7 @@ if  args.doFit:
 
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
-
+    #parallel_fit(421)
     args.doPlot = True
 
 ####################################################################

@@ -45,6 +45,7 @@ public:
     ~tnpFitter(); //{ if( _work != 0 ) delete _work; }
   void setZLineShapes(TH1 *hZPass, TH1 *hZFail );
   void setTotalBkgShapes(TH1 *hBkgPass, TH1 *hBkgFail );
+  void setBarlowBeestonBkgPdf(bool isPass);
   void setWorkspace(const std::vector<std::string>&, bool, bool, bool);
   //void setOutputFile(const std::string& fname ) {_fOut = new TFile(fname.c_str(), "recreate"); } 
   void setOutputFile(const std::string& fname );
@@ -231,6 +232,19 @@ void tnpFitter::setTotalBkgShapes(TH1 *hBkgPass, TH1 *hBkgFail ) {
   _work->import(rooFail) ;  
 }
 
+void tnpFitter::setBarlowBeestonBkgPdf(bool isPass = false ) {
+  
+  std::string hName = isPass ? "hTotBkgPass" : "hTotBkgFail";
+  std::string pdfName = isPass ? "bkgPass" : "bkgFail";  
+  std::string paramHistName = isPass ? "paramHistP" : "paramHistF";
+  //std::string histConstrName = isPass ? "constrainP_histConstr" : "constrainF_histConstr";
+
+  _work->factory("one[1]");
+  _work->factory(TString::Format("RooParamHistFunc::%s(%s)", paramHistName.c_str(), hName.c_str()));
+  //_work->factory(TString::Format("RooHistConstraint::%s(%s)", histConstrName.c_str(), paramHistName.c_str());
+  _work->factory(TString::Format("RooRealSumPdf::%s(%s, one)", pdfName.c_str(), paramHistName.c_str()));
+}
+
 void tnpFitter::setWorkspace(const std::vector<std::string>& workspace, bool isMCfit = false, bool analyticPhysicsShape = false, bool modelFSR = false) {
   for( unsigned icom = 0 ; icom < workspace.size(); ++icom ) {
     _work->factory(workspace[icom].c_str());
@@ -343,9 +357,13 @@ RooFitResult* tnpFitter::manageFit(bool isPass, int attempt = 0, std::string* la
     if (lastNamePDF != nullptr) *lastNamePDF = pdfName;
 
     // should check the parameters of the actual pdf being used rather than assuming that there are no constraints when attempt == 2
-    const RooArgSet* constraint = (attempt == 2) ? nullptr : _work->set(constrainName.c_str());
+    //const RooArgSet* constraint = (attempt == 2) ? nullptr : _work->set(constrainName.c_str());
+    const RooArgSet* constraint = _work->set(constrainName.c_str());
+
     if (_isMC and _hasShape_bkgFailMC) constraint = nullptr;
     // TODO: in case minos is used the uncertainties are asymmetric and one should get them accordingly
+    
+    std::cout << pdfName.c_str() << std::endl;
     
     RooAbsPdf *pdf = _work->pdf(pdfName.c_str());
     //RooAbsData* dh = _work->data(hName.c_str());
@@ -367,7 +385,11 @@ RooFitResult* tnpFitter::manageFit(bool isPass, int attempt = 0, std::string* la
     *chi2value = chi2.getVal();
     int ndof = _nFitBins - res->floatParsFinal().getSize();
     double chi2sigma = std::sqrt(2. * ndof);
+
+    if (ndof<0) chi2sigma=999; //when running the BB the standaone chi2 method fails
+
     bool goodChi2 = std::fabs(*chi2value - (double) ndof) < (10.0 * chi2sigma); 
+    
     //std::cout << pdfName << " --> Chi2 / ndof = " << chi2.getVal() << " / " << ndof << "   good chi2 = " << goodChi2 << std::endl;
     //std::cout << pdfName << " --> status = " << res->status() << std::endl;
     //std::cout << pdfName << " --> cov. quality = " << res->covQual() << std::endl;
