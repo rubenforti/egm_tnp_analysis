@@ -1,4 +1,5 @@
 import ROOT
+import argparse
 
 lumi_data = 16.8  # fb^-1, for 2016postVFP
 
@@ -21,6 +22,70 @@ cross_sections_bkg = {
     "Zjets" : xsec_ZmmPostVFP  # obtained from the signal MC file with the "reverse" gen-matching option
 }
 
+working_points_global = {
+    ## for global muons
+    ##
+    #'mu_reco_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_reco_mc_vertexWeights1_oscharge1.root',
+    #                 '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_reco_data_vertexWeights1_oscharge1.root'],
+    'mu_reco_plus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_recoplus_mc_vertexWeights1_oscharge1.root',
+                     '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_recoplus_data_vertexWeights1_oscharge1.root'],
+    'mu_reco_minus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_recominus_mc_vertexWeights1_oscharge1.root',
+                      '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_recominus_data_vertexWeights1_oscharge1.root'],
+    # 'mu_reco_minusodd': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_recominusodd_mc_vertexWeights1_oscharge1.root',
+    #                  '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_recominusodd_data_vertexWeights1_oscharge1.root'],
+    # 'mu_reco_minuseven': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_recominuseven_mc_vertexWeights1_oscharge1.root',
+    #                  '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_recominuseven_data_vertexWeights1_oscharge1.root'],
+    'mu_tracking_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_tracking_mc_vertexWeights1_oscharge0.root',
+                         '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_tracking_data_vertexWeights1_oscharge0.root'],
+    'mu_tracking_plus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_tracking_mc_vertexWeights1_oscharge0_tagChargeMinus.root',
+                             '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_tracking_data_vertexWeights1_oscharge0_tagChargeMinus.root'],
+    'mu_tracking_minus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_tracking_mc_vertexWeights1_oscharge0_tagChargePlus.root',
+                            '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_tracking_data_vertexWeights1_oscharge0_tagChargePlus.root'],
+    # 'mu_tracking_odd': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_trackingodd_mc_vertexWeights1_oscharge0.root',
+    #                      '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_trackingodd_data_vertexWeights1_oscharge0.root'],
+    # 'mu_tracking_even': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_trackingeven_mc_vertexWeights1_oscharge0.root',
+    #                      '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_trackingeven_data_vertexWeights1_oscharge0.root'],
+    'mu_idip_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_idip_mc_vertexWeights1_oscharge1.root',
+                     '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_idip_data_vertexWeights1_oscharge1.root'],
+    'mu_idip_plus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_idipplus_mc_vertexWeights1_oscharge1.root',
+                     '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_idipplus_data_vertexWeights1_oscharge1.root'],
+    'mu_idip_minus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_idipminus_mc_vertexWeights1_oscharge1.root',
+                      '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_idipminus_data_vertexWeights1_oscharge1.root'],
+    'mu_trigger_plus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_triggerplus_mc_vertexWeights1_oscharge1.root',
+                        '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_triggerplus_data_vertexWeights1_oscharge1.root'],
+    'mu_trigger_minus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_triggerminus_mc_vertexWeights1_oscharge1.root',
+                         '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_triggerminus_data_vertexWeights1_oscharge1.root'],
+    'mu_iso_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_iso_mc_vertexWeights1_oscharge1.root',
+                    '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_iso_data_vertexWeights1_oscharge1.root'],
+    # 'mu_iso_plus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_isoplus_mc_vertexWeights1_oscharge1.root',
+    #                 '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_isoplus_data_vertexWeights1_oscharge1.root'],
+    # 'mu_iso_minus': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_isominus_mc_vertexWeights1_oscharge1.root',
+    #                 '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_isominus_data_vertexWeights1_oscharge1.root'],
+    'mu_isonotrig_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_isonotrig_mc_vertexWeights1_oscharge1.root',
+                          '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_isonotrig_data_vertexWeights1_oscharge1.root'],
+    'mu_veto_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_veto_mc_vertexWeights1_oscharge1.root',
+                     '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_veto_data_vertexWeights1_oscharge1.root'],
+}
+
+working_points_new = {
+    'mu_reco_plus': ['/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_mc_vertexWeights1_genMatching1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_data_vertexWeights1_genMatching1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_bkg_vertexWeights1_genMatching0_oscharge1.root'],
+    'mu_reco_minus': ['/scratch/rforti/steve_histograms_2016/reco/tnp_recominus_mc_vertexWeights1_genMatching1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recominus_data_vertexWeights1_genMatching1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recominus_bkg_vertexWeights1_genMatching0_oscharge1.root'],
+    'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_mc_vertexWeights1_genMatching1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_data_vertexWeights1_genMatching1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_bkg_vertexWeights1_genMatching0_oscharge0.root'],
+    'mu_tracking_minus': ['/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingminus_mc_vertexWeights1_genMatching1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingminus_data_vertexWeights1_genMatching1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingminus_bkg_vertexWeights1_genMatching0_oscharge0.root'],
+}
+
+bkg_types = ["WW", "WZ", "ZZ", "TTSemileptonic", "TTFullyleptonic", "Ztautau", "WplusJets", "WminusJets", 
+             #"QCD", 
+             "Zjets"]
+
 def lumi_factor(filepath, process):
     """
     Returns the lumi factor for the process in the given file
@@ -28,16 +93,12 @@ def lumi_factor(filepath, process):
     file = ROOT.TFile(filepath)
     wsum_histo = file.Get("weightSum")
     num_init = wsum_histo.Integral()
-
-    if "mc" in filepath:
+    if "mc" in filepath: 
         xsection = xsec_ZmmPostVFP*1000 # has to be put in fb
     else:
         xsection = cross_sections_bkg[process]*1000
-        
     lumi_process = num_init/xsection
-
     scale = lumi_data/lumi_process
-
     return scale
 
 
@@ -51,76 +112,76 @@ def checkAddConsistency(sum, h_list):
             print("INCORRECT SUM FOR BIN", i)
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-s','--steps', default=None, nargs='*', type=str, choices=list([x.split("_")[1] for x in working_points_global.keys()]),
+                    help='Default runs all working points, but can choose only some if needed')
+parser.add_argument('-x','--exclude', default=None, nargs='*', type=str, choices=list([x.split("_")[1] for x in working_points_global.keys()]),
+                    help='Default runs all working points, but can exclude some if needed')
+parser.add_argument('--oldSteve', action='store_true',
+                    help='Use input files from Steve that have the "old" naming scheme (i.e. with the "genMatching" flag)')
+                    
+args = parser.parse_args()
+                    
+          
+if args.oldSteve is True: 
+    bkg_types.remove("Zjets") 
+    bkg_types += ["mc"]
+    datasets = working_points_new
+else:
+    datasets = working_points_global
 
-
-if __name__ == "__main__":
-
-
-    old_Steve_version = True
-
-    eff_type = "recoplus"
-
-    base_folder = f"/scratch/rforti/steve_histograms_2016/{eff_type.replace('plus', '').replace('minus', '')}/"
-
-    bkg_types = ["WW", "WZ", "ZZ", "TTSemileptonic", "TTFullyleptonic", "Ztautau", "WplusJets", "WminusJets", "QCD", "Zjets"]
-
-    if old_Steve_version:
-        bkg_types.remove("Zjets")
-        bkg_types += ["mc"]
-
-    files = [base_folder+f"tnp_{eff_type}_{bkg_type}_vertexWeights1_genMatching0_oscharge1.root" for bkg_type in bkg_types]
-
-
-    if old_Steve_version:
-        files = [file.replace("genMatching0", "genMatching-1") if "_mc_" in file else file for file in files]
-    else:
-        files = [file.replace("_genMatching0_", "") for file in files]
-
-
-    file_out = ROOT.TFile(f"{base_folder}tnp_{eff_type}_bkg_vertexWeights1_genMatching0_oscharge1.root", "recreate")
-
-
-
-    for fl in ["pass", "fail"]:
+for eff in args.steps:
+    for ch in ["plus", "minus"]:
+    
+        if not f"mu_{eff}_{ch}" in datasets.keys(): 
+            continue
+        else:
+            base_folder = datasets[f"mu_{eff}_{ch}"][0].replace(datasets[f"mu_{eff}_{ch}"][0].split("/")[-1], "")
+            
+        os = 1 if eff!="tracking" else 0
         
-        rootfiles = []
-        histos = []
-
-        for file in files:
-            # print("Opening file", file)
-            rootfiles.append(ROOT.TFile(file, "read"))
+        print(bkg_types)
         
-        for rf in rootfiles:
-            histos.append(rf.Get(f"{fl}_mu_DY_postVFP"))
-            if old_Steve_version:
-                # print(rf.GetName())
-                bkg_process = rf.GetName().split("/")[-1].split("_")[2]
-                if bkg_process == "mc": bkg_process = "Zjets"
+        fnames = [base_folder+f"tnp_{eff}{ch}_{bkg_type}_vertexWeights1_genMatching0_oscharge{os}.root" for bkg_type in bkg_types]
+        
+        if args.oldSteve:
+            fnames = [fname.replace("genMatching0", "genMatching-1") if "_mc_" in fname else fname for fname in fnames]
+        else:
+            fnames = [fname.replace("_genMatching0_", "") for fname in fnames]
+
+        if len(datasets[f"mu_{eff}_{ch}"])==3:    
+            file_out = ROOT.TFile(datasets[f"mu_{eff}_{ch}"][2], "RECREATE")
+        else:
+            file_out = ROOT.TFile(f"{base_folder}tnp_{eff}{ch}_bkg_vertexWeights1_genMatching0_oscharge{os}.root", "RECREATE")
+
+
+
+
+        for fl in ["pass", "fail"]:
+
+            rootfiles = []
+            histos = []
+
+            for fname in fnames: rootfiles.append(ROOT.TFile(fname, "read"))
+
+            for rf in rootfiles:
+                histos.append(rf.Get(f"{fl}_mu_DY_postVFP"))
+                if args.oldSteve:
+                    bkg_process = rf.GetName().split("/")[-1].split("_")[2]
+                    if bkg_process == "mc": bkg_process = "Zjets"
                 histos[-1].Scale(lumi_factor(rf.GetName(), bkg_process))
-                # print(f"Scaling {bkg_process} by {lumi_factor(rf.GetName(), bkg_process)}")
+                print(f"Scaling {bkg_process} by {lumi_factor(rf.GetName(), bkg_process)}")
 
-        hist_sum = histos[0].Clone(f"{fl}_mu_DY_postVFP")
-        print(hist_sum.Integral())
-        hist_sum.Reset()
-        print(hist_sum.Integral())
-        hist_sum.SetName(f"{fl}_mu_mcBkg_postVFP")
-        hist_sum.SetTitle(f"{fl}_mu_mcBkg_postVFP")
-        for h in histos:
-            hist_sum.Add(h)
+            hist_sum = histos[0].Clone(f"{fl}_mu_DY_postVFP")
+            hist_sum.Reset()
+            hist_sum.SetName(f"{fl}_mu_mcBkg_postVFP"), hist_sum.SetTitle(f"{fl}_mu_mcBkg_postVFP")
+            for h in histos:
+                hist_sum.Add(h)
 
-        checkAddConsistency(hist_sum, histos)
+            checkAddConsistency(hist_sum, histos)
 
+            file_out.cd()
+            hist_sum.Write()
 
-        file_out.cd()
-        hist_sum.Write()
-
-        external_sum = 0
-        for h in histos:
-            external_sum += h.Integral()
-
-        print(hist_sum.Integral(), external_sum)
-
-        
-
-    file_out.Close()
+        file_out.Close()
 
