@@ -183,10 +183,10 @@ if typeflag == 'tracking':
         #"Gaussian::constrainP_betaP(betaP,0.05,0.25)",
         #"Gaussian::constrainP_gammaP(gammaP,0.5,0.8)",
         # failing
-        "Gaussian::constrainF_acmsF(acmsF,90,50)",
+        #"Gaussian::constrainF_acmsF(acmsF,90,50)",
         #"Gaussian::constrainF_betaF(betaF,0.05,0.25)",
-        "Gaussian::constrainF_betaF(betaF,5.0,25.0)",
-        "Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
+        #"Gaussian::constrainF_betaF(betaF,5.0,25.0)",
+        #"Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
     ]
 
             
@@ -479,7 +479,7 @@ if  args.doFit:
                 # do this only for data
                 if args.altBkg:
                     fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=[], isBBfail=True)
+                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=[], isBBfail=False)
                 else:
                     fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
                                                useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
@@ -490,7 +490,7 @@ if  args.doFit:
 
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
-    #parallel_fit(421)
+    #parallel_fit(0)
     args.doPlot = True
 
 ####################################################################

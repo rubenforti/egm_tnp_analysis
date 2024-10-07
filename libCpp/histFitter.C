@@ -14,7 +14,6 @@
 #include "RooAbsPdf.h"
 #include "RooPlot.h"
 #include "RooFitResult.h"
-#include "RooChi2Var.h"
 #include "RooFFTConvPdf.h"
 /// include pdfs
 #include "RooCBExGaussShape.h"
@@ -240,7 +239,7 @@ void tnpFitter::setBarlowBeestonBkgPdf(bool isPass = false ) {
   //std::string histConstrName = isPass ? "constrainP_histConstr" : "constrainF_histConstr";
 
   _work->factory("one[1]");
-  _work->factory(TString::Format("RooParamHistFunc::%s(%s)", paramHistName.c_str(), hName.c_str()));
+  _work->factory(TString::Format("RooParamHistFunc::%s(%s,x)", paramHistName.c_str(), hName.c_str()));
   //_work->factory(TString::Format("RooHistConstraint::%s(%s)", histConstrName.c_str(), paramHistName.c_str());
   _work->factory(TString::Format("RooRealSumPdf::%s(%s, one)", pdfName.c_str(), paramHistName.c_str()));
 }
@@ -376,17 +375,18 @@ RooFitResult* tnpFitter::manageFit(bool isPass, int attempt = 0, std::string* la
                                    Save(),
                                    Range("fitMassRange"),
                                    Minimizer("Minuit2"),
+                                   EvalBackend("legacy"),
                                    Strategy(isPass ? _strategyPassFit : _strategyFailFit),
                                    PrintLevel(_printLevel),
                                    (constraint != nullptr) ? ExternalConstraints(*constraint) : RooCmdArg::none()
                                    );
 
-    RooChi2Var chi2("chi2", "chi2 var", *pdf, *((RooDataHist*) dh), Range(_xFitMin,_xFitMax));
-    *chi2value = chi2.getVal();
+    RooAbsReal * chi2 = pdf->createChi2(*((RooDataHist*) dh), Range(_xFitMin,_xFitMax));
+    *chi2value = chi2->getVal();
     int ndof = _nFitBins - res->floatParsFinal().getSize();
     double chi2sigma = std::sqrt(2. * ndof);
 
-    if (ndof<0) chi2sigma=999; //when running the BB the standaone chi2 method fails
+    if (ndof<0) chi2sigma=999; //when running the BB the standalone chi2 method fails
 
     bool goodChi2 = std::fabs(*chi2value - (double) ndof) < (10.0 * chi2sigma); 
     

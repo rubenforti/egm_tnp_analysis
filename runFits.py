@@ -24,10 +24,10 @@ def runCommands(wp, era, inputMC, inputData, options, inputBkg=None):
     ex = 'tnpEGM_fitter.py'
     cmds.append(['python', ex, opt_e, opt_f, '--createBins'                   ])
     cmds.append(['python', ex, opt_e, opt_f, opt_iMC , opt_iData, opt_iBkg, '--createHists'])
-    cmds.append(['python', ex, opt_e, opt_f, '--doFit',                        ])
-    cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig'                        ])
-    cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altSig'])
-    cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altSig'])
+    #cmds.append(['python', ex, opt_e, opt_f, '--doFit',                        ])
+    #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig'                        ])
+    #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altSig'])
+    #cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altSig'])
     #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altBkg'])
     cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altBkg'])
     cmds.append(['python', ex, opt_e, opt_f, '--sumUp'                        ])
@@ -93,6 +93,9 @@ working_points_new = {
     'mu_reco_plus': ['/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_mc_vertexWeights1_genMatching1_oscharge1.root',
                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_data_vertexWeights1_genMatching1_oscharge1.root',
                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_bkg_vertexWeights1_genMatching0_oscharge1.root'],
+    'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_mc_vertexWeights1_genMatching1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_data_vertexWeights1_genMatching1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_bkg_vertexWeights1_genMatching0_oscharge0.root'],
 }
 
 
