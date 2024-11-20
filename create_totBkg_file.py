@@ -197,7 +197,7 @@ if args.oldSteve is True:
     bkg_types += ["mc"]
     datasets = working_points_new
     args.scale_bkg_by_lumi = True
-elif args.year=="2017:
+elif args.year=="2017":
     datasets = working_points_2017
 elif args.year=="2018":
     datasets = working_points_2018
