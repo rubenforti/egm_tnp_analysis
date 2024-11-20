@@ -24,10 +24,10 @@ def runCommands(wp, era, inputMC, inputData, options, inputBkg=None):
     ex = 'tnpEGM_fitter.py'
     cmds.append(['python', ex, opt_e, opt_f, '--createBins'                   ])
     cmds.append(['python', ex, opt_e, opt_f, opt_iMC , opt_iData, opt_iBkg, '--createHists'])
-    #cmds.append(['python', ex, opt_e, opt_f, '--doFit',                        ])
-    #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig'                        ])
-    #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altSig'])
-    #cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altSig'])
+    cmds.append(['python', ex, opt_e, opt_f, '--doFit',                        ])
+    cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig'                        ])
+    cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altSig'])
+    cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altSig'])
     #cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig',  '--altBkg'])
     cmds.append(['python', ex, opt_e, opt_f, '--doFit',             '--altBkg'])
     cmds.append(['python', ex, opt_e, opt_f, '--sumUp'                        ])
@@ -93,11 +93,76 @@ working_points_new = {
     'mu_reco_plus': ['/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_mc_vertexWeights1_genMatching1_oscharge1.root',
                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_data_vertexWeights1_genMatching1_oscharge1.root',
                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_bkg_vertexWeights1_genMatching0_oscharge1.root'],
+    'mu_reco_minus': ['/scratch/rforti/steve_histograms_2016/reco/tnp_recominus_mc_vertexWeights1_genMatching1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recominus_data_vertexWeights1_genMatching1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recominus_bkg_vertexWeights1_genMatching0_oscharge1.root'],
     'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_mc_vertexWeights1_genMatching1_oscharge0.root',
                          '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_data_vertexWeights1_genMatching1_oscharge0.root',
-                          '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_bkg_vertexWeights1_genMatching0_oscharge0.root'],
+                         '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingplus_bkg_vertexWeights1_genMatching0_oscharge0.root'],
+    'mu_tracking_minus': ['/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingminus_mc_vertexWeights1_genMatching1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingminus_data_vertexWeights1_genMatching1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2016/tracking/tnp_trackingminus_bkg_vertexWeights1_genMatching0_oscharge0.root'],
 }
 
+working_points_2017 = {
+    'mu_reco_plus': ['/scratch/rforti/steve_histograms_2017/tnp_recoplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/tnp_recoplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/tnp_recoplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_reco_minus': ['/scratch/rforti/steve_histograms_2017/tnp_recominus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/tnp_recominus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/tnp_recominus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2017/tnp_trackingplus_mc_vertexWeights1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2017/tnp_trackingplus_data_vertexWeights1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2017/tnp_trackingplus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_tracking_minus': ['/scratch/rforti/steve_histograms_2017/tnp_trackingminus_mc_vertexWeights1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2017/tnp_trackingminus_data_vertexWeights1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2017/tnp_trackingminus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_idip_plus': ['/scratch/rforti/steve_histograms_2017/tnp_idipplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/tnp_idipplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/tnp_idipplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_idip_minus': ['/scratch/rforti/steve_histograms_2017/tnp_idipminus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/tnp_idipminus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/tnp_idipminus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_trigger_plus': ['/scratch/rforti/steve_histograms_2017/tnp_triggerplus_mc_vertexWeights1_oscharge1.root',
+                        '/scratch/rforti/steve_histograms_2017/tnp_triggerplus_data_vertexWeights1_oscharge1.root',
+                        '/scratch/rforti/steve_histograms_2017/tnp_triggerplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_trigger_minus': ['/scratch/rforti/steve_histograms_2017/tnp_triggerminus_mc_vertexWeights1_oscharge1.root',
+                         '/scratch/rforti/steve_histograms_2017/tnp_triggerminus_data_vertexWeights1_oscharge1.root',
+                         '/scratch/rforti/steve_histograms_2017/tnp_triggerminus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_iso_both': ['/scratch/rforti/steve_histograms_2017/tnp_iso_mc_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2017/tnp_iso_data_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2017/tnp_iso_bkg_vertexWeights1_oscharge1.root'],
+}
+
+working_points_2018 = {
+    'mu_reco_plus': ['/scratch/rforti/steve_histograms_2018/tnp_recoplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/tnp_recoplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/tnp_recoplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_reco_minus': ['/scratch/rforti/steve_histograms_2018/tnp_recominus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/tnp_recominus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/tnp_recominus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2018/tnp_trackingplus_mc_vertexWeights1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2018/tnp_trackingplus_data_vertexWeights1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2018/tnp_trackingplus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_tracking_minus': ['/scratch/rforti/steve_histograms_2018/tnp_trackingminus_mc_vertexWeights1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2018/tnp_trackingminus_data_vertexWeights1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2018/tnp_trackingminus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_idip_plus': ['/scratch/rforti/steve_histograms_2018/tnp_idipplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/tnp_idipplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/tnp_idipplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_idip_minus': ['/scratch/rforti/steve_histograms_2018/tnp_idipminus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/tnp_idipminus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/tnp_idipminus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_trigger_plus': ['/scratch/rforti/steve_histograms_2018/tnp_triggerplus_mc_vertexWeights1_oscharge1.root',
+                        '/scratch/rforti/steve_histograms_2018/tnp_triggerplus_data_vertexWeights1_oscharge1.root',
+                        '/scratch/rforti/steve_histograms_2018/tnp_triggerplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_trigger_minus': ['/scratch/rforti/steve_histograms_2018/tnp_triggerminus_mc_vertexWeights1_oscharge1.root',
+                         '/scratch/rforti/steve_histograms_2018/tnp_triggerminus_data_vertexWeights1_oscharge1.root',
+                         '/scratch/rforti/steve_histograms_2018/tnp_triggerminus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_iso_both': ['/scratch/rforti/steve_histograms_2018/tnp_iso_mc_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2018/tnp_iso_data_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2018/tnp_iso_bkg_vertexWeights1_oscharge1.root'],
+}
 
 working_points_tracker = {
     'mu_reco_both': ['/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/trackerMuons_highPurity_allWP/tnp_reco_mc_vertexWeights1_oscharge1.root',
@@ -123,6 +188,7 @@ parser.add_argument('-o',  '--outdir', default=None, type=str,
                     help='name of the output folder (if not passed, a default one is used, which has the time stamp in it)')
 parser.add_argument('-e',  '--era', default=['GtoH'], nargs='+', type=str, choices=['GtoH', 'BtoF'],
                     help='Choose the era')
+parser.add_argument("-y", "--year", type=str, choices=["2016", "2017", "2018"], help="Year of data taking")
 parser.add_argument('-d',  '--dryRun', action='store_true',
                     help='Do not execute commands, just print them')
 parser.add_argument('-s','--steps', default=None, nargs='*', type=str, choices=list([x.split("_")[1] for x in working_points_global.keys()]),
@@ -143,7 +209,16 @@ if args.exclude and args.steps:
 
 eras = args.era
 #working_points = working_points_tracker if args.useTrackerMuons else working_points_global
-working_points = working_points_tracker if args.useTrackerMuons else working_points_new
+
+if args.useTrackerMuons:
+    working_points = working_points_tracker  
+else:
+    if args.year=="2017" :
+        working_points = working_points_2017
+    elif args.year=="2018" :
+        working_points = working_points_2018
+    else:
+        working_points = working_points_global
 
 
 stepsToRun = []

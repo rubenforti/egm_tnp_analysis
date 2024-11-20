@@ -1,7 +1,10 @@
 import ROOT
+import sys
 import argparse
 
-lumi_data = 16.8  # fb^-1, for 2016postVFP
+lumi_data = {"2016" : 16.8, # only postVFP
+             "2017" : 37.99, # this includes the LS where the HLT_isoMu24 was not prescaled
+             "2018" : 59.81}
 
 BR_TAUToMU = 0.1739
 BR_TAUToE = 0.1782
@@ -67,6 +70,69 @@ working_points_global = {
                      '/home/m/mciprian/tnp/Steve_Marc_Raj/outputs/test_globalMuons_highPurity_XYZ_1orMoreValidHitsSA/tnp_veto_data_vertexWeights1_oscharge1.root'],
 }
 
+working_points_2017 = {
+    'mu_reco_plus': ['/scratch/rforti/steve_histograms_2017/tnp_recoplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/tnp_recoplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/tnp_recoplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_reco_minus': ['/scratch/rforti/steve_histograms_2017/tnp_recominus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/tnp_recominus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/tnp_recominus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2017/tnp_trackingplus_mc_vertexWeights1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2017/tnp_trackingplus_data_vertexWeights1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2017/tnp_trackingplus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_tracking_minus': ['/scratch/rforti/steve_histograms_2017/tnp_trackingminus_mc_vertexWeights1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2017/tnp_trackingminus_data_vertexWeights1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2017/tnp_trackingminus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_idip_plus': ['/scratch/rforti/steve_histograms_2017/tnp_idipplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/tnp_idipplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/tnp_idipplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_idip_minus': ['/scratch/rforti/steve_histograms_2017/tnp_idipminus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/tnp_idipminus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/tnp_idipminus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_trigger_plus': ['/scratch/rforti/steve_histograms_2017/tnp_triggerplus_mc_vertexWeights1_oscharge1.root',
+                        '/scratch/rforti/steve_histograms_2017/tnp_triggerplus_data_vertexWeights1_oscharge1.root',
+                        '/scratch/rforti/steve_histograms_2017/tnp_triggerplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_trigger_minus': ['/scratch/rforti/steve_histograms_2017/tnp_triggerminus_mc_vertexWeights1_oscharge1.root',
+                         '/scratch/rforti/steve_histograms_2017/tnp_triggerminus_data_vertexWeights1_oscharge1.root',
+                         '/scratch/rforti/steve_histograms_2017/tnp_triggerminus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_iso_both': ['/scratch/rforti/steve_histograms_2017/tnp_iso_mc_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2017/tnp_iso_data_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2017/tnp_iso_bkg_vertexWeights1_oscharge1.root'],
+}
+
+
+working_points_2018 = {
+
+    'mu_reco_plus': ['/scratch/rforti/steve_histograms_2018/tnp_recoplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/tnp_recoplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/tnp_recoplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_reco_minus': ['/scratch/rforti/steve_histograms_2018/tnp_recominus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/tnp_recominus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/tnp_recominus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2018/tnp_trackingplus_mc_vertexWeights1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2018/tnp_trackingplus_data_vertexWeights1_oscharge0.root',
+                         '/scratch/rforti/steve_histograms_2018/tnp_trackingplus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_tracking_minus': ['/scratch/rforti/steve_histograms_2018/tnp_trackingminus_mc_vertexWeights1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2018/tnp_trackingminus_data_vertexWeights1_oscharge0.root',
+                          '/scratch/rforti/steve_histograms_2018/tnp_trackingminus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_idip_plus': ['/scratch/rforti/steve_histograms_2018/tnp_idipplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/tnp_idipplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/tnp_idipplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_idip_minus': ['/scratch/rforti/steve_histograms_2018/tnp_idipminus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/tnp_idipminus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/tnp_idipminus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_trigger_plus': ['/scratch/rforti/steve_histograms_2018/tnp_triggerplus_mc_vertexWeights1_oscharge1.root',
+                        '/scratch/rforti/steve_histograms_2018/tnp_triggerplus_data_vertexWeights1_oscharge1.root',
+                        '/scratch/rforti/steve_histograms_2018/tnp_triggerplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_trigger_minus': ['/scratch/rforti/steve_histograms_2018/tnp_triggerminus_mc_vertexWeights1_oscharge1.root',
+                         '/scratch/rforti/steve_histograms_2018/tnp_triggerminus_data_vertexWeights1_oscharge1.root',
+                         '/scratch/rforti/steve_histograms_2018/tnp_triggerminus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_iso_both': ['/scratch/rforti/steve_histograms_2018/tnp_iso_mc_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2018/tnp_iso_data_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2018/tnp_iso_bkg_vertexWeights1_oscharge1.root'],
+}
+
+
 working_points_new = {
     'mu_reco_plus': ['/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_mc_vertexWeights1_genMatching1_oscharge1.root',
                      '/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_data_vertexWeights1_genMatching1_oscharge1.root',
@@ -86,7 +152,7 @@ bkg_types = ["WW", "WZ", "ZZ", "TTSemileptonic", "TTFullyleptonic", "Ztautau", "
              #"QCD", 
              "Zjets"]
 
-def lumi_factor(filepath, process):
+def lumi_factor(filepath, process, yr="2016"):
     """
     Returns the lumi factor for the process in the given file
     """
@@ -98,7 +164,7 @@ def lumi_factor(filepath, process):
     else:
         xsection = cross_sections_bkg[process]*1000
     lumi_process = num_init/xsection
-    scale = lumi_data/lumi_process
+    scale = lumi_data[yr]/lumi_process
     return scale
 
 
@@ -117,8 +183,11 @@ parser.add_argument('-s','--steps', default=None, nargs='*', type=str, choices=l
                     help='Default runs all working points, but can choose only some if needed')
 parser.add_argument('-x','--exclude', default=None, nargs='*', type=str, choices=list([x.split("_")[1] for x in working_points_global.keys()]),
                     help='Default runs all working points, but can exclude some if needed')
+parser.add_argument("-y", "--year", type=str, choices=["2016", "2017", "2018"], help="Year of data taking")
 parser.add_argument('--oldSteve', action='store_true',
                     help='Use input files from Steve that have the "old" naming scheme (i.e. with the "genMatching" flag)')
+parser.add_argument('--scale_bkg_by_lumi', action='store_true',
+                    help='Scale background datasets to match the luminosity of data')
                     
 args = parser.parse_args()
                     
@@ -127,32 +196,45 @@ if args.oldSteve is True:
     bkg_types.remove("Zjets") 
     bkg_types += ["mc"]
     datasets = working_points_new
+    args.scale_bkg_by_lumi = True
+elif args.year=="2017:
+    datasets = working_points_2017
+elif args.year=="2018":
+    datasets = working_points_2018
 else:
     datasets = working_points_global
-
+    
+ 
+if args.steps is None:
+    args.steps = list(set([k.split("_")[1] for k in working_points_global.keys()]))
+    
 for eff in args.steps:
-    for ch in ["plus", "minus"]:
+    for ch in ["plus", "minus", "both"]:
     
         if not f"mu_{eff}_{ch}" in datasets.keys(): 
             continue
         else:
             base_folder = datasets[f"mu_{eff}_{ch}"][0].replace(datasets[f"mu_{eff}_{ch}"][0].split("/")[-1], "")
             
-        os = 1 if eff!="tracking" else 0
+        os = 0 if eff=="tracking" else 1
         
-        print(bkg_types)
+        print(eff, ch, base_folder, os)
         
-        fnames = [base_folder+f"tnp_{eff}{ch}_{bkg_type}_vertexWeights1_genMatching0_oscharge{os}.root" for bkg_type in bkg_types]
+        ch_file = ch if ch!="both" else ""
+        
+        fnames = [base_folder+f"tnp_{eff}{ch_file}_{bkg_type}_vertexWeights1_genMatching0_oscharge{os}.root" for bkg_type in bkg_types]
         
         if args.oldSteve:
             fnames = [fname.replace("genMatching0", "genMatching-1") if "_mc_" in fname else fname for fname in fnames]
+            gm_info = "_genMatching0"
         else:
-            fnames = [fname.replace("_genMatching0_", "") for fname in fnames]
+            fnames = [fname.replace("_genMatching0", "") for fname in fnames]
+            gm_info = ""
 
         if len(datasets[f"mu_{eff}_{ch}"])==3:    
             file_out = ROOT.TFile(datasets[f"mu_{eff}_{ch}"][2], "RECREATE")
         else:
-            file_out = ROOT.TFile(f"{base_folder}tnp_{eff}{ch}_bkg_vertexWeights1_genMatching0_oscharge{os}.root", "RECREATE")
+            file_out = ROOT.TFile(f"{base_folder}tnp_{eff}{ch_file}_bkg_vertexWeights1{gm_info}_oscharge{os}.root", "RECREATE")
 
 
 
@@ -162,15 +244,20 @@ for eff in args.steps:
             rootfiles = []
             histos = []
 
-            for fname in fnames: rootfiles.append(ROOT.TFile(fname, "read"))
-
+            for fname in fnames: rootfiles.append(ROOT.TFile(fname, "READ"))       
+            
             for rf in rootfiles:
+            
                 histos.append(rf.Get(f"{fl}_mu_DY_postVFP"))
-                if args.oldSteve:
-                    bkg_process = rf.GetName().split("/")[-1].split("_")[2]
-                    if bkg_process == "mc": bkg_process = "Zjets"
-                histos[-1].Scale(lumi_factor(rf.GetName(), bkg_process))
-                print(f"Scaling {bkg_process} by {lumi_factor(rf.GetName(), bkg_process)}")
+                
+                bkg_process = rf.GetName().split("/")[-1].split("_")[2]
+                if args.oldSteve and bkg_process == "mc": bkg_process = "Zjets"
+                
+                if args.scale_bkg_by_lumi:
+                    scaling = lumi_factor(rf.GetName(), bkg_process, yr=args.year)
+                    print(f"Scaling {bkg_process} by {scaling}")
+                    histos[-1].Scale(scaling)
+                    
 
             hist_sum = histos[0].Clone(f"{fl}_mu_DY_postVFP")
             hist_sum.Reset()

@@ -153,6 +153,11 @@ if typeflag == 'tracking':
         "meanP[-0.0,-5.0,5.0]","sigmaP[1,0.7,6.0]","alphaP[2.0,1.2,3.5]",'nP[3,0.01,5]',"sigmaP_2[1.5,0.5,6.0]",
         "meanF[-0.0,-12.0,12.0]","sigmaF[2,0.7,12.0]","alphaF[2.0,1.2,3.5]",'nF[3,0.01,5]',"sigmaF_2[2.0,0.5,6.0]",
     ]
+    
+    tnpParAltBkgFit = [
+        "meanP[-0.0,-5.0,5.0]", "sigmaP[0.5,0.1,5.0]", "expalphaP[0.,-5.,5.]",
+        "meanF[-0.0,-5.0,5.0]", "sigmaF[0.5,0.02,3.0]",
+    ]
 
     # for pt >= 55 and tracking (se also note above)
     tnpParAltSigFitTrackingHighPt = [
@@ -220,6 +225,11 @@ elif typeflag == 'reco':
         "meanP[-0.0,-5.0,5.0]","sigmaP[1,0.7,6.0]","alphaP[2.0,1.2,3.5]",'nP[3,0.01,5]',"sigmaP_2[1.5,0.5,6.0]",
         "meanF[-0.0,-5.0,5.0]","sigmaF[2,0.7,5.0]","alphaF[2.0,1.2,3.5]",'nF[3,0.1,5]',"sigmaF_2[2.0,0.5,6.0]",
     ]
+    
+    tnpParAltBkgFit = [
+        "meanP[-0.0,-5.0,5.0]", "sigmaP[0.5,0.1,3.0]", "expalphaP[0.,-5.,5.]",
+        "meanF[-0.0,-3.0,3.0]", "sigmaF[0.5,0.01,2.0]",
+    ]
 
     tnpParNomFit.extend(bkgParFit)
     tnpParAltSigFit.extend(bkgParFit)
@@ -262,6 +272,11 @@ else:
         "meanF[-0.0,-5.0,5.0]","sigmaF[0.5,0.1,5.0]",
     ]
     
+    tnpParAltBkgFit = [
+        "meanP[-0.0,-5.0,5.0]","sigmaP[0.5,0.1,5.0]", "expalphaP[0.,-5.,5.]",
+        "meanF[-0.0,-5.0,5.0]","sigmaF[0.5,0.1,5.0]",
+    ]
+    
     tnpParAltSigFit = [
         "meanP[-0.0,-5.0,5.0]","sigmaP[1,0.7,6.0]","alphaP[2.0,1.2,3.5]",'nP[3,0.01,5]',"sigmaP_2[1.5,0.5,6.0]",
         "meanF[-0.0,-5.0,5.0]","sigmaF[2,0.7,15.0]","alphaF[2.0,1.2,3.5]",'nF[3,0.01,5]',"sigmaF_2[2.0,0.5,6.0]",
@@ -278,20 +293,6 @@ if any(x in typeflag for x in flagsWithFSR):
     fsrGauss = ["fsrMeanF[70.0,65.0,80.0]", "fsrSigmaF[1.0,1.2,5.0]"]
     tnpParAltSigFit.extend(fsrGauss)
 
-# for now this is not used, the nominal background model has been moved to exponential already, this might become a Bernstein polynominal or something
-tnpParAltBkgFit = [
-    "meanP[-0.0,-5.0,5.0]","sigmaP[0.5,0.01,5.0]",
-    "meanF[-0.0,-3.0,3.0]","sigmaF[0.5,0.02,3.0]",
-    "expalphaP[0.,-5.,5.]",
-    #"expalphaF[0.,-5.,5.]",
-    ]
-'''
-bkgShapesAltBkg = [
-    "Exponential::bkgPass(x, expalphaP)",
-    "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
-    "RooHistPdf::bkgFailBackup(x, hTotBkgFail, 0)",
-]
-'''
 
 if args.outdir:
     baseOutDir = '{o}/efficiencies_{era}/'.format(o=args.outdir, era=args.era)
@@ -479,7 +480,7 @@ if  args.doFit:
                 # do this only for data
                 if args.altBkg:
                     fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=[], isBBfail=False)
+                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=[], isBBfail=True)
                 else:
                     fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
                                                useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
