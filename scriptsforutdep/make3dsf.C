@@ -22,7 +22,7 @@ void make3dsf() {
 	TFile *output=new TFile(Filename.c_str(),"RECREATE");
 	double ptarray[16] = {24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 55., 60., 65.};
 	double utarray[18] = {-3000000000,-30,-15,-10,-5,0,5,10,15,30,40,50,60,70,80,90,100,30000000000};
-	double etaarray[48];
+	double etaarray[49];
 	for (unsigned int i=0; i!=49; i++) {
 		etaarray[i] = -2.4+i*0.1;
 	}
