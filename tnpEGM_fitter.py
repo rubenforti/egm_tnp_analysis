@@ -85,7 +85,7 @@ if typeflag == 'tracking':
     #binning_pt  = [15., 25.,35.,45.,55.,65.,80.]
     #massbins, massmin, massmax = 100, 40, 140
     #binning_pt  = [55., 65.]
-    binning_pt  = [24., 35., 45., 55., 65.]  # [24., 65.]
+    binning_pt  = [10., 15., 24., 35., 45., 55., 65.]  # [24., 65.]
     #massbins, massmin, massmax = 100, 50, 150
     massbins, massmin, massmax = 80, 50, 130
     binningDef = {
@@ -100,7 +100,7 @@ elif typeflag == 'reco':
     if args.useTrackerMuons:
         binning_pt  = [24., 26., 30., 34., 38., 42., 46., 50., 55., 65.]
     else:
-        binning_pt  = [24., 26., 30., 34., 38., 42., 46., 50., 55., 60., 65.]
+        binning_pt  = [10., 15., 20., 24., 26., 30., 34., 38., 42., 46., 50., 55., 60., 65.]
     #binning_pt  = [24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 55., 60., 65.]
     binningDef = {
         'eta' : {'var' : 'eta', 'type': 'float', 'bins': binning_eta},
@@ -108,7 +108,8 @@ elif typeflag == 'reco':
     }
 
 elif typeflag == 'veto':
-    binning_pt = [(15. + 5.*i) for i in range(11)]
+    binning_pt  = [10., 15., 20., 24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 55., 60., 65.]
+    #binning_pt = [(15. + 5.*i) for i in range(11)]
     binningDef = {
         'eta' : {'var' : 'eta', 'type': 'float', 'bins': binning_eta},
         'pt'  : {'var' : 'pt' , 'type': 'float', 'bins': binning_pt }
@@ -188,10 +189,10 @@ if typeflag == 'tracking':
         #"Gaussian::constrainP_betaP(betaP,0.05,0.25)",
         #"Gaussian::constrainP_gammaP(gammaP,0.5,0.8)",
         # failing
-        #"Gaussian::constrainF_acmsF(acmsF,90,50)",
+        "Gaussian::constrainF_acmsF(acmsF,90,50)",
         #"Gaussian::constrainF_betaF(betaF,0.05,0.25)",
-        #"Gaussian::constrainF_betaF(betaF,5.0,25.0)",
-        #"Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
+        "Gaussian::constrainF_betaF(betaF,5.0,25.0)",
+        "Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
     ]
 
             
@@ -246,9 +247,9 @@ elif typeflag == 'reco':
         #"Gaussian::constrainP_betaP(betaP,0.05,0.25)",
         #"Gaussian::constrainP_gammaP(gammaP,0.5,0.8)",
         # failing
-        #"Gaussian::constrainF_acmsF(acmsF,90,50)",
-        #"Gaussian::constrainF_betaF(betaF,5.0,25.0)",
-        #"Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
+        "Gaussian::constrainF_acmsF(acmsF,90,50)",
+        "Gaussian::constrainF_betaF(betaF,5.0,25.0)",
+        "Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
     ]
 
 else:
@@ -318,12 +319,14 @@ samples_dy = tnpSample(mcName,
                        args.inputMC,
                        f"{outputDirectory}/{mcName}_{args.flag}.root",
                        True)
-
-bkg_name = f"mu_mcBkg_{eraMC}"
-samples_bkg = tnpSample(bkg_name,
-                        args.inputBkg,
-                        f"{outputDirectory}/{bkg_name}_{args.flag}.root",
-                        True)
+if args.inputBkg or args.altBkg:
+    bkg_name = f"mu_mcBkg_{eraMC}"
+    samples_bkg = tnpSample(bkg_name,
+                            args.inputBkg,
+                            f"{outputDirectory}/{bkg_name}_{args.flag}.root",
+                            True)
+else:
+    samples_bkg=None
 #samples_data.printConfig()
 #samples_dy.printConfig()
 
@@ -411,7 +414,7 @@ if args.createHists:
 ####################################################################
 ##### Actual Fitter
 ####################################################################
-sampleToFit = samplesDef['data']
+sampleToFit = samplesDef['data'] 
 if sampleToFit is None:
     print('[tnpEGM_fitter, prelim checks]: sample (data or MC) not available... check your settings')
     sys.exit(1)
@@ -446,7 +449,7 @@ if args.altBkg :
 plottingDir = '%s/plots/%s/%s' % (outputDirectory,sampleToFit.getName(),fitType)
 createPlotDirAndCopyPhp(plottingDir)
     
-if  args.doFit:
+if args.doFit:
     print(">>> running fits")
     #print('sampleToFit.dump()', sampleToFit.dump())
     # can't use all probes for cases with isolation, since the failing probe sample has the FSR and a second bump at low mass
@@ -480,7 +483,7 @@ if  args.doFit:
                 # do this only for data
                 if args.altBkg:
                     fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=[], isBBfail=True)
+                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=[], bkgShapes=[], isBBfail=True)
                 else:
                     fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
                                                useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)

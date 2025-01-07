@@ -98,7 +98,10 @@ working_points_2017 = {
     'mu_iso_both': ['/scratch/rforti/steve_histograms_2017/tnp_iso_mc_vertexWeights1_oscharge1.root',
                     '/scratch/rforti/steve_histograms_2017/tnp_iso_data_vertexWeights1_oscharge1.root',
                     '/scratch/rforti/steve_histograms_2017/tnp_iso_bkg_vertexWeights1_oscharge1.root'],
-}
+    'mu_isonotrig_both': ['/scratch/rforti/steve_histograms_2017/tnp_isonotrig_mc_vertexWeights1_oscharge1.root',
+                          '/scratch/rforti/steve_histograms_2017/tnp_isonotrig_data_vertexWeights1_oscharge1.root',
+                          '/scratch/rforti/steve_histograms_2017/tnp_isonotrig_bkg_vertexWeights1_oscharge1.root'],
+    }
 
 
 working_points_2018 = {
@@ -130,8 +133,53 @@ working_points_2018 = {
     'mu_iso_both': ['/scratch/rforti/steve_histograms_2018/tnp_iso_mc_vertexWeights1_oscharge1.root',
                     '/scratch/rforti/steve_histograms_2018/tnp_iso_data_vertexWeights1_oscharge1.root',
                     '/scratch/rforti/steve_histograms_2018/tnp_iso_bkg_vertexWeights1_oscharge1.root'],
+    'mu_isonotrig_both': ['/scratch/rforti/steve_histograms_2018/tnp_isonotrig_mc_vertexWeights1_oscharge1.root',
+                          '/scratch/rforti/steve_histograms_2018/tnp_isonotrig_data_vertexWeights1_oscharge1.root',
+                          '/scratch/rforti/steve_histograms_2018/tnp_isonotrig_bkg_vertexWeights1_oscharge1.root'],
+    }
+
+
+working_points_2017_forVeto = {
+    'mu_reco_plus': ['/scratch/rforti/steve_histograms_2017/forVeto/tnp_recoplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/forVeto/tnp_recoplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2017/forVeto/tnp_recoplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_reco_minus': ['/scratch/rforti/steve_histograms_2017/forVeto/tnp_recominus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/forVeto/tnp_recominus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2017/forVeto/tnp_recominus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2017/forVeto/tnp_trackingplus_mc_vertexWeights1_oscharge0.root',
+                     '/scratch/rforti/steve_histograms_2017/forVeto/tnp_trackingplus_data_vertexWeights1_oscharge0.root',
+                     '/scratch/rforti/steve_histograms_2017/forVeto/tnp_trackingplus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_tracking_minus': ['/scratch/rforti/steve_histograms_2017/forVeto/tnp_trackingminus_mc_vertexWeights1_oscharge0.root',
+                      '/scratch/rforti/steve_histograms_2017/forVeto/tnp_trackingminus_data_vertexWeights1_oscharge0.root',
+                      '/scratch/rforti/steve_histograms_2017/forVeto/tnp_trackingminus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_veto_plus': ['/scratch/rforti/steve_histograms_2017/forVeto/tnp_vetoplus_mc_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2017/forVeto/tnp_vetoplus_data_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2017/forVeto/tnp_vetoplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_veto_minus': ['/scratch/rforti/steve_histograms_2017/forVeto/tnp_vetominus_mc_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2017/forVeto/tnp_vetominus_data_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2017/forVeto/tnp_vetominus_bkg_vertexWeights1_oscharge1.root']
 }
 
+working_points_2018_forVeto = {
+    'mu_reco_plus': ['/scratch/rforti/steve_histograms_2018/forVeto/tnp_recoplus_mc_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/forVeto/tnp_recoplus_data_vertexWeights1_oscharge1.root',
+                     '/scratch/rforti/steve_histograms_2018/forVeto/tnp_recoplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_reco_minus': ['/scratch/rforti/steve_histograms_2018/forVeto/tnp_recominus_mc_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/forVeto/tnp_recominus_data_vertexWeights1_oscharge1.root',
+                      '/scratch/rforti/steve_histograms_2018/forVeto/tnp_recominus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_tracking_plus': ['/scratch/rforti/steve_histograms_2018/forVeto/tnp_trackingplus_mc_vertexWeights1_oscharge0.root',
+                     '/scratch/rforti/steve_histograms_2018/forVeto/tnp_trackingplus_data_vertexWeights1_oscharge0.root',
+                     '/scratch/rforti/steve_histograms_2018/forVeto/tnp_trackingplus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_tracking_minus': ['/scratch/rforti/steve_histograms_2018/forVeto/tnp_trackingminus_mc_vertexWeights1_oscharge0.root',
+                      '/scratch/rforti/steve_histograms_2018/forVeto/tnp_trackingminus_data_vertexWeights1_oscharge0.root',
+                      '/scratch/rforti/steve_histograms_2018/forVeto/tnp_trackingminus_bkg_vertexWeights1_oscharge0.root'],
+    'mu_veto_plus': ['/scratch/rforti/steve_histograms_2018/forVeto/tnp_vetoplus_mc_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2018/forVeto/tnp_vetoplus_data_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2018/forVeto/tnp_vetoplus_bkg_vertexWeights1_oscharge1.root'],
+    'mu_veto_minus': ['/scratch/rforti/steve_histograms_2018/forVeto/tnp_vetominus_mc_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2018/forVeto/tnp_vetominus_data_vertexWeights1_oscharge1.root',
+                    '/scratch/rforti/steve_histograms_2018/forVeto/tnp_vetominus_bkg_vertexWeights1_oscharge1.root']
+}
 
 working_points_new = {
     'mu_reco_plus': ['/scratch/rforti/steve_histograms_2016/reco/tnp_recoplus_mc_vertexWeights1_genMatching1_oscharge1.root',
@@ -184,6 +232,7 @@ parser.add_argument('-s','--steps', default=None, nargs='*', type=str, choices=l
 parser.add_argument('-x','--exclude', default=None, nargs='*', type=str, choices=list([x.split("_")[1] for x in working_points_global.keys()]),
                     help='Default runs all working points, but can exclude some if needed')
 parser.add_argument("-y", "--year", type=str, choices=["2016", "2017", "2018"], help="Year of data taking")
+parser.add_argument('--forVeto', action='store_true', help='Use the working points related to veto')               
 parser.add_argument('--oldSteve', action='store_true',
                     help='Use input files from Steve that have the "old" naming scheme (i.e. with the "genMatching" flag)')
 parser.add_argument('--scale_bkg_by_lumi', action='store_true',
@@ -197,10 +246,10 @@ if args.oldSteve is True:
     bkg_types += ["mc"]
     datasets = working_points_new
     args.scale_bkg_by_lumi = True
-elif args.year=="2017":
-    datasets = working_points_2017
-elif args.year=="2018":
-    datasets = working_points_2018
+elif args.year=="2017" :
+    datasets = working_points_2017 if not args.forVeto else working_points_2017_forVeto
+elif args.year=="2018" :
+    datasets = working_points_2018 if not args.forVeto else working_points_2018_forVeto
 else:
     datasets = working_points_global
     
