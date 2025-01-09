@@ -54,35 +54,27 @@ def compileFileMerger(x):
 
 
 def testBinning(bins, testbins, var="var", flag="workingPoint", allowRebin=False):
-    if bins != testbins:
+    """
+    """
+    if bins!=testbins:
         if bins[0] in testbins:
             firstTestIdx = testbins.index(bins[0])
-            if all(bins[i] == testbins[i+firstTestIdx] for i in range(len(bins))):
-                print()
-                print("PLEASE READ!")
-                print()
-                print(f"Warning: {var} binning not consistent with the one in histograms for {flag}")
+            if all(bins[i]==testbins[i+firstTestIdx] for i in range(len(bins))):
+                print(f"\nWarning: {var} binning not consistent with the one in histograms for {flag}")
                 print(f"{bins}")
                 print(f"{testbins}")
-                print(f"However it seems to be a slice of it, so I will continue assuming it is intentional. Proceed with caution!")
-                print()
-                print()
+                print(f"However it seems to be a slice of it, so I will continue assuming it is intentional. Proceed with caution!\n\n")
                 return 0
             elif allowRebin and all(bins[i] in testbins for i in range(len(bins))):
-                print()
-                print("PLEASE READ!")
-                print()
-                print(f"Warning: {var} binning not consistent with the one in histograms for {flag}")
+                print(f"\nWarning: {var} binning not consistent with the one in histograms for {flag}")
                 print(f"{bins}")
                 print(f"{testbins}")
-                print(f"However it seems to be a subset of it, so I will continue assuming you wanted to rebin. Proceed with caution!")
-                print()
-                print()
+                print(f"However it seems to be a subset of it, so I will continue assuming you wanted to rebin. Proceed with caution!\n\n")
                 return 0
-        print(f"Error: {var} binning not consistent with the one in histograms for {flag}")
+        print(f"\nError: {var} binning not consistent with the one in histograms for {flag}")
         print(f"{bins}")
         print(f"{testbins}")
-        print("Please check!")
+        print("Please check!\n\n")
         return -1
     else:
         return 0

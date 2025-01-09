@@ -38,23 +38,22 @@ import libPython.rootUtils as tnpRoot
 import libPython.fitUtils as fitUtils
         
 parser = argparse.ArgumentParser()
-parser.add_argument('--checkBins'  , action='store_true'  , help = 'check  bining definition')
-parser.add_argument('--createBins' , action='store_true'  , help = 'create bining definition')
-parser.add_argument('--createHists', action='store_true'  , help = 'create histograms')
-parser.add_argument('--sample'     , default='all'        , help = 'create histograms (per sample, expert only)')
-parser.add_argument('--altSig'     , action='store_true'  , help = 'alternate signal model fit')
-#parser.add_argument('--noBkg'      , action='store_true'  , help = 'Use no background for alternate signal model fit (mainly for test in MC)')
-parser.add_argument('--altBkg'     , action='store_true'  , help = 'alternate background model fit')
-parser.add_argument('--doFit'      , action='store_true'  , help = 'fit sample (sample should be defined in settings.py)')
-parser.add_argument('--mcSig'      , action='store_true'  , help = 'fit MC nom [to init fit params]')
-parser.add_argument('--doPlot'     , action='store_true'  , help = 'plotting')
-parser.add_argument('--sumUp'      , action='store_true'  , help = 'sum up efficiencies')
-parser.add_argument('--iBin'       , dest = 'binNumber'   , type=int,  default=-1, help='bin number (to refit individual bin)')
 parser.add_argument('--flag'       , default = None       , help ='WP to test')
-parser.add_argument('--era'        , type=str, default = '', choices=["BtoF", "GtoH"], help ='era to perform tnp fits for')
 parser.add_argument('--inputMC'    , type=str, default = '', help = "MC input file which contains 3d histograms")
 parser.add_argument('--inputData'  , type=str, default = '', help = "Data input file which contains 3d histograms")
 parser.add_argument('--inputBkg'   , type=str, default = '', help = "Background input file which contains 3d histograms")
+parser.add_argument('--era'        , type=str, default = '', choices=["BtoF", "GtoH"], help ='era to perform tnp fits for')
+parser.add_argument('--checkBins'  , action='store_true'  ,  help = 'check  bining definition')
+parser.add_argument('--createBins' , action='store_true'  ,  help = 'create bining definition')
+parser.add_argument('--createHists', action='store_true'  ,  help = 'create histograms')
+parser.add_argument('--sample'     , default='all'        ,  help = 'create histograms (per sample, expert only)')
+parser.add_argument('--altSig'     , action='store_true'  ,  help = 'alternate signal model fit')
+parser.add_argument('--altBkg'     , action='store_true'  ,  help = 'alternate background model fit')
+parser.add_argument('--doFit'      , action='store_true'  ,  help = 'fit sample (sample should be defined in settings.py)')
+parser.add_argument('--mcSig'      , action='store_true'  ,  help = 'fit MC nom [to init fit params]')
+parser.add_argument('--mergeFiles'     , action='store_true'  ,  help = 'plotting')
+parser.add_argument('--sumUp'      , action='store_true'  ,  help = 'sum up efficiencies')
+parser.add_argument('--iBin'       , dest = 'binNumber'   , type=int,  default=-1, help='bin number (to refit individual bin)')
 parser.add_argument('--outdir'     , type=str, default=None,
                     help="name of the output folder (if not passed, a default one is used, which has the time stamp in it)")
 parser.add_argument('--useTrackerMuons', action='store_true'  , help = 'Measuring efficiencies specific for tracker muons (different tunings needed')
@@ -66,9 +65,13 @@ if args.flag is None:
     sys.exit(0)
 
 ## put most of the stuff here and make it configurable...
+## AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 ## ===========================================================================
 
+
 massbins, massmin, massmax = 60, 60, 120
+
+binning_mass = [round(massmin + (massmax - massmin)/massbins*i, 1) for i in range(massbins+1) ]
 
 ## define the binning here, much easier...
 binning_eta = [round(-2.4+0.1*i,2) for i in range(49) ]
@@ -100,8 +103,8 @@ elif typeflag == 'reco':
     if args.useTrackerMuons:
         binning_pt  = [24., 26., 30., 34., 38., 42., 46., 50., 55., 65.]
     else:
-        binning_pt  = [10., 15., 20., 24., 26., 30., 34., 38., 42., 46., 50., 55., 60., 65.]
-    #binning_pt  = [24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 55., 60., 65.]
+        #binning_pt  = [10., 15., 20., 24., 26., 30., 34., 38., 42., 46., 50., 55., 60., 65.]
+        binning_pt  = [24., 26., 30., 34., 38., 42., 46., 50., 55., 60., 65.]
     binningDef = {
         'eta' : {'var' : 'eta', 'type': 'float', 'bins': binning_eta},
         'pt'  : {'var' : 'pt' , 'type': 'float', 'bins': binning_pt }
@@ -294,76 +297,52 @@ if any(x in typeflag for x in flagsWithFSR):
     fsrGauss = ["fsrMeanF[70.0,65.0,80.0]", "fsrSigmaF[1.0,1.2,5.0]"]
     tnpParAltSigFit.extend(fsrGauss)
 
+########################
+
+
 
 if args.outdir:
-    baseOutDir = '{o}/efficiencies_{era}/'.format(o=args.outdir, era=args.era)
+    baseOutDir = f'{args.outdir}/efficiencies_{args.era}/'
 else:
-    today = datetime.date.isoformat(datetime.date.today())
-    baseOutDir = 'plots/results_2022-09-28_binnedInPtEta_4ptbins25to65_noOScharge/efficiencies_{era}/'.format(d=today, era=args.era)
+    baseOutDir = f'plots/results_{datetime.date.isoformat(datetime.date.today())}/efficiencies_{args.era}/'
 
-outputDirectory = '%s/%s/' % (baseOutDir, args.flag)
+outputDirectory = f'{baseOutDir}/{args.flag}'
 
-print('===>  Output directory: ')
-print(outputDirectory)
+print('===>  Output directory: ', outputDirectory)
+print()
 
 luminosity = 16.8 if args.era == "GtoH" else 19.5
-dataName = f"mu_Run{args.era}"
-samples_data = tnpSample(dataName,
-                         args.inputData,
-                         f"{outputDirectory}/{dataName}_{args.flag}.root",
-                         False)
-
 eraMC = "postVFP" if args.era == "GtoH" else "preVFP"
+dataName = f"mu_Run{args.era}"
 mcName = f"mu_DY_{eraMC}"
-samples_dy = tnpSample(mcName,
-                       args.inputMC,
-                       f"{outputDirectory}/{mcName}_{args.flag}.root",
-                       True)
-if args.inputBkg or args.altBkg:
-    bkg_name = f"mu_mcBkg_{eraMC}"
-    samples_bkg = tnpSample(bkg_name,
-                            args.inputBkg,
-                            f"{outputDirectory}/{bkg_name}_{args.flag}.root",
-                            True)
-else:
-    samples_bkg=None
-#samples_data.printConfig()
-#samples_dy.printConfig()
+bkg_name = f"mu_mcBkg_{eraMC}"
+
+samples_data = tnpSample(dataName, args.inputData, f"{outputDirectory}/{dataName}_{args.flag}.root", False)
+samples_dy   = tnpSample(mcName,   args.inputMC,   f"{outputDirectory}/{mcName}_{args.flag}.root",   True)
+samples_bkg  = tnpSample(bkg_name, args.inputBkg,  f"{outputDirectory}/{bkg_name}_{args.flag}.root", True)
+
 
 ## check binning in histogram and consistency with settings above
 ## FIXME: should be done for each step, but histograms are not always passed
 if args.createHists:
-    ftest = ROOT.TFile(args.inputData, "read")
+    ftest = ROOT.TFile(args.inputData, "READ")
     htest = ftest.Get(f"pass_{dataName}")
-    if massmin < htest.GetXaxis().GetBinLowEdge(1) or massmax > htest.GetXaxis().GetBinLowEdge(htest.GetNbinsX()+1):
-        print(f"Error: you are trying to use a wider mass range ({massmin}-{massmax}) than the histograms for {typeflag}")
-        quit()
+    this_binning_mass = [round(htest.GetXaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsX()+2) ]
+    resTestMass = testBinning(binning_mass, this_binning_mass, "mass", typeflag, allowRebin=True)
     this_binning_pt = [round(htest.GetYaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsY()+2) ]
     resTestPt = testBinning(binning_pt, this_binning_pt, "pt", typeflag, allowRebin=True)
     this_binning_eta = [round(htest.GetZaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsZ()+2) ]
     resTestEta = testBinning(binning_eta, this_binning_eta, "eta", typeflag, allowRebin=True)
     ftest.Close()
-    if resTestPt or resTestEta:
+    if resTestMass or resTestPt or resTestEta:
         exit(-1)
 
-samplesDef = {
-    'data'   : samples_data,
-    'mcNom'  : samples_dy,
-    'mcAltSig'  : None,
-    'mcBkg'  : samples_bkg,
-    #'tagSel' : None,
-}
-
-samplesDef["data"].printConfig()
-
-## done making it more configurable
-## ===========================================================================================
 
 ####################################################################
 ##### Create (check) Bins
 ####################################################################
 if args.checkBins:
-    print(">>> check bins")
+    print(">>> Check bins")
     tnpBins = tnpBiner.createBins(binningDef, None)
     for ib in range(len(tnpBins['bins'])):
         print(tnpBins['bins'][ib]['name'])
@@ -371,34 +350,40 @@ if args.checkBins:
     sys.exit(0)
 
 if args.createBins:
-    print(">>> create bins")
+    print(">>> Create bins")
     if os.path.exists( outputDirectory ):
         shutil.rmtree( outputDirectory )
     createPlotDirAndCopyPhp(outputDirectory)
     tnpBins = tnpBiner.createBins(binningDef, None)
-    pickle.dump( tnpBins, open( '%s/bining.pkl'%(outputDirectory),'wb') )
-    print('created dir: {o} '.format(o= outputDirectory))
-    print('bining created successfully... ')
-    print('Note than any additional call to createBins will overwrite directory {o}'.format(o= outputDirectory))
+    pickle.dump( tnpBins, open( f'{outputDirectory}/bining.pkl', 'wb') )
+    print(f'Created dir: {outputDirectory} ')
+    print(f'Bining created successfully... ')
+    print(f'Note than any additional call to createBins will overwrite directory {outputDirectory}')
     sys.exit(0)
 
-tnpBins = pickle.load( open( '%s/bining.pkl'%(outputDirectory),'rb') )
-
-#print(tnpBins)
-#quit()
+tnpBins = pickle.load( open( f'{outputDirectory}/bining.pkl', 'rb') )
 
 
 ####################################################################
 ##### Create Histograms
 ####################################################################
 
+samplesDef = {
+    'data'   : samples_data,
+    'mcNom'  : samples_dy,
+    'mcBkg'  : samples_bkg,
+    #'tagSel' : None,
+}
+
+samplesDef["data"].printConfig()
+
 if args.createHists:
-    print(">>> create histograms")
+    print()
+    print(">>> Create histograms")
     def parallel_hists(sampleType):
-        # if not sampleType == 'mcNom': return
         sample = samplesDef[sampleType]
         if sample is not None and (sampleType == args.sample or args.sample == 'all'):
-            print('creating histogram for sample', sample.getName())
+            print('Creating histogram for sample', sample.getName())
             sample.printConfig()
             if typeflag == 'tracking':
                 var = { 'namePassing' : 'pair_mass', 'nameFailing' : 'pair_massStandalone', 'nbins' : massbins, 'min' : massmin, 'max': massmax }
@@ -414,45 +399,46 @@ if args.createHists:
 ####################################################################
 ##### Actual Fitter
 ####################################################################
-sampleToFit = samplesDef['data'] 
-if sampleToFit is None:
-    print('[tnpEGM_fitter, prelim checks]: sample (data or MC) not available... check your settings')
-    sys.exit(1)
+
 
 sampleMC = samplesDef['mcNom']
 if sampleMC is None:
     print('[tnpEGM_fitter, prelim checks]: MC sample not available... check your settings')
     sys.exit(1)
-    
+
 for s in samplesDef.keys():
     sample =  samplesDef[s]
     if sample is None: continue
     setattr( sample, 'mcRef'     , sampleMC )
-    if args.altBkg: setattr( sample, 'bkgRef'    , samplesDef['mcBkg'] )
     setattr( sample, 'nominalFit', '%s/%s_%s_nominalFit.root' % ( outputDirectory , sample.getName(), args.flag ) )
     setattr( sample, 'altSigFit' , '%s/%s_%s_altSigFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
     setattr( sample, 'altBkgFit' , '%s/%s_%s_altBkgFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
 
-### change the sample to fit if mc fit
-if args.mcSig:
-    sampleToFit = samplesDef['mcNom']
+sampleToFit = samplesDef['data'] if not args.mcSig else sampleMC
 
-fileName = sampleToFit.nominalFit
-fitType  = 'nominalFit'
-if args.altSig :
+if sampleToFit is None:
+    print('[tnpEGM_fitter, prelim checks]: data sample not available... check your settings')
+    sys.exit(1)
+
+if args.altSig:
     fileName = sampleToFit.altSigFit
     fitType  = 'altSigFit'
-if args.altBkg :
+elif args.altBkg:
     fileName = sampleToFit.altBkgFit
     fitType  = 'altBkgFit'
+else:
+    fileName = sampleToFit.nominalFit
+    fitType  = 'nominalFit'
+
 
 plottingDir = '%s/plots/%s/%s' % (outputDirectory,sampleToFit.getName(),fitType)
 createPlotDirAndCopyPhp(plottingDir)
+
     
 if args.doFit:
-    print(">>> running fits")
-    #print('sampleToFit.dump()', sampleToFit.dump())
-    # can't use all probes for cases with isolation, since the failing probe sample has the FSR and a second bump at low mass
+    print()
+    print(">>> Running fits")
+
     #useAllTemplateForFail = True if typeflag not in flagsWithFSR else False # use all probes to build MC template for failing probes when fitting data nominal
     #maxFailIntegralToUseAllProbe = 300 if typeflag not in ["tracking"] else -1 # use all probes for the failing template only when stat is very small, otherwise sometimes the fit doesn't work well
     useAllTemplateForFail = False
@@ -462,7 +448,12 @@ if args.doFit:
     def parallel_fit(ib): ## parallel
         #print("tnpBins['bins'][ib] = ",tnpBins['bins'][ib])
         if (args.binNumber >= 0 and ib == args.binNumber) or args.binNumber < 0:
-            if args.altSig:
+            
+            if not (args.altSig or args.altBkg):
+                fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
+                                            useAllTemplateForFail, maxFailIntegralToUseAllProbe, 
+                                            constrainPars=parConstraints, bkgShapes=bkgShapes)
+            elif args.altSig:
                 if typeflag == 'tracking':
                     # constrainSignalFailFromMC sets the data fit parameters to MC value +/- 3*uncertainty
                     if fitUtils.ptMin(tnpBins['bins'][ib]) > 54.0: # force peak mean more on the right for high pt bins and tracking efficiency
@@ -472,68 +463,53 @@ if args.doFit:
                         fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
                                                   altSignalFail=altSignalFail, modelFSR=False, constrainSignalFailFromMC=False, constrainPars=parConstraints, bkgShapes=bkgShapes)
                 elif typeflag == 'reco': 
-                    fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
-                                              altSignalFail=altSignalFail, modelFSR=False, constrainPars=parConstraints, bkgShapes=bkgShapes)
+                        fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
+                                                  altSignalFail=altSignalFail, modelFSR=False, constrainPars=parConstraints, bkgShapes=bkgShapes)
                 else:
                     #fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
                     #                          altSignalFail=altSignalFail, modelFSR=modelFSR, zeroBackground=True)
                     fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
                                               altSignalFail=altSignalFail, modelFSR=modelFSR, constrainPars=parConstraints, bkgShapes=bkgShapes)
-            elif not args.mcSig:
-                # do this only for data
-                if args.altBkg:
-                    fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=[], bkgShapes=[], isBBfail=True)
-                else:
-                    fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
-                                               useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
-            # else:
-            #     # nominal fit in MC still with analytc form but no background
-            #     fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
-            #                               altSignalFail=altSignalFail, modelFSR=modelFSR, zeroBackground=True)
+            elif args.altBkg and not args.mcSig:
+                fitUtils.histFitterAltBkg(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
+                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
+            else:
+                # This is the case for fitting on MC with altSig/altBkg models. Not used for now
+                pass
 
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
     #parallel_fit(0)
-    args.doPlot = True
+    args.mergeFiles = True
 
 ####################################################################
-##### dumping plots
+##### Merging the files with the results into a single one
 ####################################################################
-if  args.doPlot:
+if args.mergeFiles:
 
     print()
-    print("Merging root files ...")
+    print(">>> Merging root files...")
     print(f"Output: {fileName}")
     fileNameNoExt = fileName.rstrip(".root")
-    # if doing one bin get the new plots and update the file, don't overwrite it or all other bins are lost
     if args.binNumber >= 0:
         thisbin = tnpBins['bins'][args.binNumber]['name']
         rootfileBin = safeOpenFile(f"{fileNameNoExt}_bin_{thisbin}.root")
         rootfile = safeOpenFile(f"{fileName}", mode="UPDATE")
         for k in rootfileBin.GetListOfKeys():
             obj = safeGetObject(rootfileBin, k.GetName(), detach=False)
+            rootfile.cd()
             obj.Write(k.GetName(), ROOT.TObject.kOverwrite) # write in merged root file overwriting keys if they already existed
         rootfile.Close()
         rootfileBin.Close()
         os.system(f"rm {fileNameNoExt}_bin_bin*.root")
     else:
-        # TODO: check all files are present?
-        ## hadd doesn't always work for some reason, it leads to crashes
-        # os.system(f"hadd -f {fileName} {fileNameNoExt}_bin_bin*.root")
-        ## C++ helper works fine for merging 
-        # NumberOfBins = (len(binning_eta)-1) * (len(binning_pt)-1)
-        # os.system(f"./libCpp/FileMerger {NumberOfBins} {fileName} {fileNameNoExt}_bin_bin*.root")
-        ## test python version to call the C++ helper
         numberOfBins = len(tnpBins['bins'])
         regexp = re.compile(f"{os.path.basename(fileNameNoExt)}_bin_bin.*.root")
         outpath = os.path.dirname(fileName) + "/"
         vec = ROOT.std.vector["std::string"]()
-        for f in os.listdir(outpath):
-            if os.path.isfile(os.path.join(outpath, f)) and regexp.match(f):
-                #print(outpath+f)
-                #print(">>> Storing it")
-                vec.push_back(os.path.join(outpath, f))
+        for fname in os.listdir(outpath):
+            if os.path.isfile(os.path.join(outpath, fname)) and regexp.match(fname):
+                vec.push_back(os.path.join(outpath, fname))
         if vec.size() != numberOfBins:
             print(f"Error: number of files ({vec.size()}) does not coincide with number of bins ({numberOfBins})")
             vec.clear()
@@ -547,52 +523,30 @@ if  args.doPlot:
         os.system(f"rm {fileNameNoExt}_bin_bin*.root")
     print("Done with merging :-)")
     print()
-    #quit()
-
-    ## currently done in the C++ class directly
-    ## keep for reference or debugging
-    # verbosePlotting = True
-    # rootfile = safeOpenFile(f"{fileName}", mode="read")
-    # for ib in range(len(tnpBins['bins'])):
-    #     if (args.binNumber >= 0 and ib == args.binNumber) or args.binNumber < 0:
-    #         binName = tnpBins['bins'][ib]['name']
-    #         c = safeGetObject(rootfile, f"{binName}_Canv", detach=False)
-    #         c.SaveAs(f"{plottingDir}/{binName}.png")
-    #         #tnpRoot.histPlotter(rootfile, tnpBins['bins'][ib], plottingDir, -1, verbosePlotting ) ## the -1 is form marc, something with replica
-    # rootfile.Close()
-    # print(' ===> Plots saved in <=======')
-#    print('localhost/%s/' % plottingDir)
 
 
 ####################################################################
-##### dumping egamma txt file
+##### Producing the sumUp .txt files and plots
 ####################################################################
 if args.sumUp:
     from pprint import pprint
-    #print('this is the dump of sampleToFit:')
-    #sampleToFit.dump()
-    #pprint(vars(sampleToFit.mcRef))
 
-    #print('done with dump')
     info = {
-        #'data'        : sampleToFit.getOutputPath(),
-        'dataNominal' : sampleToFit.nominalFit,
-        'dataAltSig'  : sampleToFit.altSigFit ,
-        'dataAltBkg'  : sampleToFit.altBkgFit ,
-        'mcNominal'   : sampleToFit.mcRef.getOutputPath(),
-        'mcNominal_fit': sampleToFit.mcRef.nominalFit,
-        'mcAltSig'    : sampleToFit.mcRef.altSigFit,
-        'mcAltBkg'    : sampleToFit.mcRef.altBkgFit, # not used
+        'Data_Nominal'  : sampleToFit.nominalFit,
+        'Data_Alt_Sig'  : sampleToFit.altSigFit ,
+        'Data_Alt_Bkg'  : sampleToFit.altBkgFit ,
+        'MC_Nominal'    : sampleToFit.mcRef.getOutputPath(),
+        'MC_Nominal_fit': sampleToFit.mcRef.nominalFit,
+        'MC_Alt_Sig'    : sampleToFit.mcRef.altSigFit, # not used
+        'MC_Alt_Bkg'    : sampleToFit.mcRef.altBkgFit, # not used
         'tagSel'      : None
         }
 
-    if 'mcAltSig' in samplesDef.keys() and not (samplesDef['mcAltSig'] is None):
-        #print(samplesDef["mcAltSig"].getOutputPath())
-        #print(sampleToFit.mcRef.altSigFit)
-        info['mcAltSig'] = samplesDef["mcAltSig"].getOutputPath()
+    if 'MC_Alt_Sig' in samplesDef.keys() and not (samplesDef['MC_Alt_Sig'] is None):
+
+        info['MC_Alt_Sig'] = samplesDef["MC_Alt_Sig"].getOutputPath()
     if 'tagSel' in samplesDef.keys() and not (samplesDef['tagSel'] is None):
         info['tagSel'] = samplesDef['tagSel'].getOutputPath()
-    #print(info)
 
     effFileName = outputDirectory+'/allEfficiencies.txt'
 
@@ -600,12 +554,9 @@ if args.sumUp:
     if any ("_tmpTMP_" in f for f in os.listdir(outputDirectory)):
         os.system(f"rm {effFileName}_tmpTMP_*")
             
-    #fOut = open( effFileName,'w')
+
     def parallel_sumUp(_bin):
-        effis = tnpRoot.getAllEffi(info, _bin, outputDirectory, saveCanvas=True)
-        #print("effis =",effis)
-        #print('this is _bin', _bin)        
-        ### formatting assuming 2D bining -- to be fixed
+        effis = tnpRoot.getAllEffi(info, _bin, outputDirectory, saveCanvas=False)
         v1Range = _bin['title'].split(';')[1].split('<')
         v2Range = _bin['title'].split(';')[2].split('<')
 
@@ -614,35 +565,27 @@ if args.sumUp:
         fOut = open(effFileName+'_tmpTMP_'+str(ib), 'w')
 
         if not ib:
-            astr = '### var1 : %s\n' % v1Range[1]
-            fOut.write( astr )
-            astr = '### var2 : %s\n' % v2Range[1]
-            fOut.write( astr )
-            #exp = '{v0:8s}\t{v1:8s}\t{v2:8s}\t{v3:8s}\t{edaltb:10s}\t{edaltbe:10s}\t{emcv:10s}\t{emce:10s}\n'.format( 
-            exp = '{v0:8s}\t{v1:8s}\t{v2:8s}\t{v3:8s}\t{edv:10s}\t{ede:10s}\t{emcv:10s}\t{emce:10s}\t{edalts:15s}\t{edaltse:15s}\t{edaltb:15s}\t{edaltbe:15s}\t{emcalt:15s}\t{emcalte:15s}\t{etagsel:10s}\n'.format(
-                v0='var1min', v1='var1max', v2='var2min', v3='var2max',
-                edv='eff data', ede='err data',
-                emcv='eff mc', emce='err mc',
-                edalts='eff data altS', edaltse='err data altS',
-                edaltb='eff data altB', edaltbe='err data altB',
-                emcalt='eff mc alt', emcalte='err mc alt',
-                etagsel='eff tag sel'
-                )
-            #print(exp)
-            fOut.write(exp)
+            fOut.write( '### var1 : %s\n' % v1Range[1] )
+            fOut.write( '### var2 : %s\n' % v2Range[1] )
+            exp = ''
+            for v in ['var1min', 'var1max', 'var2min', 'var2max']:
+                exp += f'{v:8s}\t'
+            for v in ['eff data', 'err data', 'eff mc', 'err mc']:
+                exp += f'{v:10s}\t'
+            for v in ['effD altS', 'errD altS', 'effD altB', 'errD altB', 'eff mc altS', 'err mc altS', 'eff tag sel']:
+                exp += f'{v:12s}\t'
 
-        astr =  '%-+8.3f\t%-+8.3f\t%-+8.3f\t%-+8.3f\t%-10.6f\t%-10.6f\t%-10.6f\t%-10.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-15.6f\t%-10.5f' % (
-            float(v1Range[0]), float(v1Range[2]),
-            float(v2Range[0]), float(v2Range[2]),
-            effis['dataNominal'][0],effis['dataNominal'][1],
-            effis['mcNominal'  ][0],effis['mcNominal'  ][1],
-            effis['dataAltSig' ][0],effis['dataAltSig' ][1],
-            effis['dataAltBkg' ][0], effis['dataAltBkg' ][1],
-            effis['mcAltSig' ][0], effis['mcAltSig' ][1],
-            effis['tagSel'][0],
-            )
-        #print(astr)
-        fOut.write( astr + '\n' )
+            fOut.write(exp + '\n')
+
+        vals = ''
+        for r in [v1Range, v2Range]:
+            vals += f'{float(r[0]):<+8.3f}\t{float(r[2]):<+8.3f}\t'
+        for v in ['Data_Nominal', 'MC_Nominal']:
+            vals += f'{effis[v][0]:<+10.6f}\t{effis[v][1]:<+10.6f}\t'
+        for v in ['Data_Alt_Sig', 'Data_Alt_Bkg', 'MC_Alt_Sig', 'tagSel']:
+            vals += f'{effis[v][0]:<+12.6f}\t{effis[v][1]:<+12.6f}\t'
+
+        fOut.write( vals + '\n' )
         fOut.close()
         effis = {}
         
@@ -650,9 +593,6 @@ if args.sumUp:
     #ROOT.gErrorIgnoreLevel = ROOT.kWarning
     pool = Pool()
     pool.map(parallel_sumUp, tnpBins['bins'])
-    #for thebin in tnpBins['bins']: 
-    #    parallel_sumUp(thebin)
-    #ROOT.gErrorIgnoreLevel = odllevel
 
     lsfiles = []
     alltmpfiles = os.listdir(outputDirectory)
@@ -661,7 +601,6 @@ if args.sumUp:
         lsfiles.append(outputDirectory+'/'+ifile)
 
     lsfiles = sorted(lsfiles, key = lambda x: int(x.split('_')[-1]))
-    #print(lsfiles)
 
     os.system('cat '+' '.join(lsfiles)+' > '+effFileName)
     os.system('rm  '+' '.join(lsfiles))
@@ -674,6 +613,8 @@ if args.sumUp:
     outputDirectoryTH2 = f"{outputDirectoryPlots}/histo2D/"
     createPlotDirAndCopyPhp(outputDirectoryTH2)
 
+    # Everything works, but the syntax of the various functions is awful
+    # Will change it in a second time
     import libPython.EGammaID_scaleFactors as makesf
     makesf.doSFs(effFileName,luminosity,['pt', 'eta'], outputDirectoryTH2)
 
