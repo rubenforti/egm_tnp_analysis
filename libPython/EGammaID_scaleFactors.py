@@ -301,14 +301,16 @@ def diagnosticErrorPlot( effgr, ierror, nameout ):
 
 
 def doSFs(filein, lumi, axis = ['pT','eta'], plotdir='' ):
-    print(" Opening file: {f} (plot lumi: {l:.1f})".format(f=filein, l=lumi ))
+    """
+    """
+    print(f"Opening file: {filein} (plot lumi: {lumi:.1f})")
     CMS_lumi.lumi_13TeV = "%3.1f fb^{-1}" % lumi 
 
     nameOutBase = filein.replace('.txt','')
-    if not os.path.exists( filein ) :
-        print('file {f} does not exist'.format(f=filein))
-        sys.exit(1)
 
+    if not os.path.exists( filein ) :
+        print(f'File {filein} does not exist')
+        sys.exit(1)
 
     fileWithEff = open(filein, 'r')
     effGraph = efficiencyList()
@@ -319,7 +321,7 @@ def doSFs(filein, lumi, axis = ['pT','eta'], plotdir='' ):
 
         if len(numbers) > 0 and isFloat(numbers[0]):
             etaKey = ( float(numbers[0]), float(numbers[1]) )
-            ptKey  = ( float(numbers[2]), min(500,float(numbers[3])) )
+            ptKey  = ( float(numbers[2]), float(numbers[3]) ) 
         
             myeff = efficiency( ptKey, etaKey,
                                 float(numbers[4]), float(numbers[5]), ## data eff and error

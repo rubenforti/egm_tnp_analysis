@@ -109,17 +109,18 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
     effis = {}
     effis_canvas = {}
     binName = bindef["name"]
-    canvasesToGet = ["Data_Nominal", "MC_Nominal_fit"] #, "Data_Alt_Sig", "Data_Alt_Bkg"] 
+    canvasesToGet = ["MC_Nominal_fit", "Data_Nominal", "Data_Alt_Sig", "Data_Alt_Bkg"] 
     #canvasesToGet = ["dataNominal", "dataAltSig", "dataAltBkg", "mcNominal"]
     for key, value in info.items():
-        effis[key], effis_canvas[f"canv_{key}"] = [-1, -1], None
+        effis[key], effis_canvas[f"canv_{key}"] = [-1, -1], None        
         if value is None or not os.path.isfile(value):
+            canvasesToGet = [c for c in canvasesToGet if c!=key]
             continue
 
         rootfile = safeOpenFile(value, mode="READ")
 
         if key in canvasesToGet and saveCanvas:
-                effis_canvas[f"canv_{key}"] = safeGetObject(rootfile, f"{binName}_Canv", detach=False)
+            effis_canvas[f"canv_{key}"] = safeGetObject(rootfile, f"{binName}_Canv", detach=False)
         
         if key == "MC_Nominal":
             hP = safeGetObject(rootfile, f"{binName}_Pass", detach=False)
@@ -141,29 +142,6 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
         
         effis[key] = computeEffi(nP, nF, eP, eF) + [nP, nF, eP, eF]
         rootfile.Close()
-    ##
-    ##
-    ## Saving canvases here, let's test if this also leads to crashes
-    ##
-    # canvases = [f"canv_{x}" for x in canvasesToGet]
-    # padsFromCanvas = {}
-    # for c in canvases:
-    #     if c not in effis_canvas.keys() or effis_canvas[c] == None:                
-    #         print(f"Canvas {c} not found or not available")
-    #         return 0
-    #     else:
-    #         #padsFromCanvas[c] = list(effis[c])
-    #         ## the following was for when canvases where returned
-    #         if effis_canvas[c].ClassName() ==  "TCanvas":
-    #             padsFromCanvas[c] = [p for p in effis_canvas[c].GetListOfPrimitives()]
-    #             # print(padsFromCanvas[c])
-    #             for p in padsFromCanvas[c]:
-    #                 ROOT.SetOwnership(p, False)
-    #             #effis_canvas[c] = None
-    #             #ROOT.SetOwnership(effis_canvas[c], False)
-    #         else:
-    #             print(f"SOMETHING SCREWED UP WITH TCANVAS for bin {bindef['name']}")
-    #             return 0
 
     if not saveCanvas:
         return effis
@@ -194,7 +172,7 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
 
         for ip, p in enumerate(effis_canvas[f"canv_{canv_type}"].GetListOfPrimitives()):
             if not ip: continue
-            pad_to_use = pad_pass if ip==1 else pad_fail if ip==2 else None  # TO CHANGE WHEN CREATING THE CANVASES !!!!!
+            pad_to_use = pad_pass if ip==1 else pad_fail if ip==2 else None
             pad_to_use.cd(icol+1)
             newp = p.Clone(f"tmp_{canv_type}_{ip}")
             newp.SetPad(0.02, 0.00, 0.98, 0.98)

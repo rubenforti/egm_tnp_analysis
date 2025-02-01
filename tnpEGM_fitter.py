@@ -87,8 +87,8 @@ print("typeflag = ",typeflag)
 if typeflag == 'tracking':
     #binning_pt  = [15., 25.,35.,45.,55.,65.,80.]
     #massbins, massmin, massmax = 100, 40, 140
-    #binning_pt  = [55., 65.]
-    binning_pt  = [10., 15., 24., 35., 45., 55., 65.]  # [24., 65.]
+    #binning_pt  = [10., 15., 24., 35., 45., 55., 65.]  
+    binning_pt  = [24., 35., 45., 55., 65.]
     #massbins, massmin, massmax = 100, 50, 150
     massbins, massmin, massmax = 80, 50, 130
     binningDef = {
@@ -371,11 +371,10 @@ tnpBins = pickle.load( open( f'{outputDirectory}/bining.pkl', 'rb') )
 samplesDef = {
     'data'   : samples_data,
     'mcNom'  : samples_dy,
+    'mcAltSig' : None,
     'mcBkg'  : samples_bkg,
     #'tagSel' : None,
 }
-
-samplesDef["data"].printConfig()
 
 if args.createHists:
     print()
@@ -406,10 +405,11 @@ if sampleMC is None:
     print('[tnpEGM_fitter, prelim checks]: MC sample not available... check your settings')
     sys.exit(1)
 
-for s in samplesDef.keys():
-    sample =  samplesDef[s]
-    if sample is None: continue
+for sample in samplesDef.values():
+    if sample is None: 
+        continue
     setattr( sample, 'mcRef'     , sampleMC )
+    if args.altBkg: setattr( sample, 'bkgRef'    , samplesDef['mcBkg'] )
     setattr( sample, 'nominalFit', '%s/%s_%s_nominalFit.root' % ( outputDirectory , sample.getName(), args.flag ) )
     setattr( sample, 'altSigFit' , '%s/%s_%s_altSigFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
     setattr( sample, 'altBkgFit' , '%s/%s_%s_altBkgFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
@@ -471,15 +471,20 @@ if args.doFit:
                     fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
                                               altSignalFail=altSignalFail, modelFSR=modelFSR, constrainPars=parConstraints, bkgShapes=bkgShapes)
             elif args.altBkg and not args.mcSig:
+                '''
                 fitUtils.histFitterAltBkg(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                                      useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
+                                                  useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
+                '''
+                fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
+                                                  useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=[], bkgShapes=[], isBBfail=True)
             else:
                 # This is the case for fitting on MC with altSig/altBkg models. Not used for now
                 pass
 
+    #parallel_fit(0)
+
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
-    #parallel_fit(0)
     args.mergeFiles = True
 
 ####################################################################
@@ -556,7 +561,7 @@ if args.sumUp:
             
 
     def parallel_sumUp(_bin):
-        effis = tnpRoot.getAllEffi(info, _bin, outputDirectory, saveCanvas=False)
+        effis = tnpRoot.getAllEffi(info, _bin, outputDirectory, saveCanvas=True)
         v1Range = _bin['title'].split(';')[1].split('<')
         v2Range = _bin['title'].split(';')[2].split('<')
 
@@ -579,11 +584,12 @@ if args.sumUp:
 
         vals = ''
         for r in [v1Range, v2Range]:
-            vals += f'{float(r[0]):<+8.3f}\t{float(r[2]):<+8.3f}\t'
+            vals += f'{float(r[0]):<+8.3f}\t{float(r[2]):+8.3f}\t'
         for v in ['Data_Nominal', 'MC_Nominal']:
-            vals += f'{effis[v][0]:<+10.6f}\t{effis[v][1]:<+10.6f}\t'
-        for v in ['Data_Alt_Sig', 'Data_Alt_Bkg', 'MC_Alt_Sig', 'tagSel']:
-            vals += f'{effis[v][0]:<+12.6f}\t{effis[v][1]:<+12.6f}\t'
+            vals += f'{effis[v][0]:<10.6f}\t{effis[v][1]:<10.6f}\t'
+        for v in ['Data_Alt_Sig', 'Data_Alt_Bkg', 'MC_Alt_Sig']:
+            vals += f'{effis[v][0]:<12.6f}\t{effis[v][1]:<12.6f}\t'
+        vals += f'{effis["tagSel"][0]:<12.6f}\t'
 
         fOut.write( vals + '\n' )
         fOut.close()

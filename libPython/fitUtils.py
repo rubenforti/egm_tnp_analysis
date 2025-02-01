@@ -18,7 +18,7 @@ def ptMin( tnpBin ):
 def createWorkspaceForAltSig( sample, tnpBin, tnpWorkspaceParam, constrainSignalFailFromMC=False):
     
     fileref = sample.mcRef.altSigFit
-    filemc  = safeOpenFile(fileref,mode='READ')
+    filemc  = safeOpenFile(fileref, mode='READ')
 
     fitresP = safeGetObject(filemc, '%s_resP' % tnpBin['name'], detach=False)
     fitresF = safeGetObject(filemc, '%s_resF' % tnpBin['name'], detach=False)
