@@ -26,6 +26,10 @@ from libPython.tnpClassUtils import tnpSample
 from libPython.plotUtils import compileMacro, testBinning, safeGetObject, safeOpenFile, createPlotDirAndCopyPhp, compileFileMerger
 from libPython.checkFitStatus import checkFit
 
+## import fitting settings and strategies
+from config.fit_settings import fitParsAndShapes
+from config.fitting_strategies import fitStrategies
+
 compileMacro("libCpp/RooCBExGaussShape.cc")
 compileMacro("libCpp/RooCMSShape.cc")
 compileMacro("libCpp/histFitter.C")
@@ -35,10 +39,9 @@ compileMacro("libCpp/FileMerger.C")
 ### tnp library
 import libPython.binUtils  as tnpBiner
 import libPython.rootUtils as tnpRoot
-import libPython.fitUtils as fitUtils
         
 parser = argparse.ArgumentParser()
-parser.add_argument('--flag'       , default = None       , help ='WP to test')
+parser.add_argument('--flag'       , default = None        , help ='WP to test')
 parser.add_argument('--inputMC'    , type=str, default = '', help = "MC input file which contains 3d histograms")
 parser.add_argument('--inputData'  , type=str, default = '', help = "Data input file which contains 3d histograms")
 parser.add_argument('--inputBkg'   , type=str, default = '', help = "Background input file which contains 3d histograms")
@@ -51,7 +54,7 @@ parser.add_argument('--altSig'     , action='store_true'  ,  help = 'alternate s
 parser.add_argument('--altBkg'     , action='store_true'  ,  help = 'alternate background model fit')
 parser.add_argument('--doFit'      , action='store_true'  ,  help = 'fit sample (sample should be defined in settings.py)')
 parser.add_argument('--mcSig'      , action='store_true'  ,  help = 'fit MC nom [to init fit params]')
-parser.add_argument('--mergeFiles'     , action='store_true'  ,  help = 'plotting')
+parser.add_argument('--mergeFiles' , action='store_true'  ,  help = 'merging files')
 parser.add_argument('--sumUp'      , action='store_true'  ,  help = 'sum up efficiencies')
 parser.add_argument('--iBin'       , dest = 'binNumber'   , type=int,  default=-1, help='bin number (to refit individual bin)')
 parser.add_argument('--outdir'     , type=str, default=None,
@@ -83,6 +86,17 @@ binning_pt  = [24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 
 typeflag = args.flag.split('_')[1]
 
 print("typeflag = ",typeflag)
+
+###########################################################
+# Importing fitter handlers depending on which type of efficiency we are running on.
+# Ugly, but for now it works
+if typeflag in ["reco", "tracking"]:
+    import libPython.fitUtils_reco_trk as fitUtils
+else:
+    import libPython.fitUtils as fitUtils
+
+###########################################################
+
 
 if typeflag == 'tracking':
     #binning_pt  = [15., 25.,35.,45.,55.,65.,80.]
@@ -125,180 +139,8 @@ else:
     }
 
 
-#############################################################
-########## fitting params to tune fit by hand if necessary
-#############################################################
-if typeflag == 'tracking':
-
-    bkgParFit = [
-        "expalphaP[0.,-5.,5.]",
-        "expalphaF[0.,-5.,5.]",
-        "acmsF[60.,40.,130.]","betaF[5.,0.1,40.]","gammaF[0.1, 0, 1]","peakF[90.0]",
-        "c1F[0.0,-1.0,1.0]","c2F[-0.5,-1.0,1.0]","c3F[0.0,-1.0,1.0]","c4F[-0.5,-1.0,1.0]",
-        #"argMassF[100.,80.,120.]","argSlopeF[5.,0.,20.]","argPowF[1.0,0.0,3.0]"
-    ]
-    bkgShapes = [
-        "Exponential::bkgPass(x, expalphaP)",
-        #"RooCMSShape::bkgPass(x, acmsP, betaP, gammaP, peakP)",
-        "RooCMSShape::bkgFail(x, acmsF, betaF, gammaF, peakF)",
-        #"ArgusBG::bkgFail(x,argMassF,argSlopeF,argPowF)",
-        "Chebychev::bkgFailBackup(x,{c1F,c2F,c3F,c4F})",
-        #"Bernstein::bkgFailBackup(x,{b0F[0.5,0,1.0],b1F[0.5,0,1.0],b2F[0.5,0,1.0],b3F[0.5,0,1.0],b4F[0.5,0,1.0]})",
-        "Exponential::bkgFailMC(x, expalphaF)"
-    ]
-    
-    tnpParNomFit = [
-        "meanP[-0.0,-5.0,5.0]","sigmaP[0.5,0.1,5.0]",
-        "meanF[-0.0,-5.0,5.0]","sigmaF[0.5,0.02,3.0]",
-    ]
-
-    # these might be partially overridden when running the fit to data by taking the values from the MC fit and narrowing the range in which they can float to help convergence
-    tnpParAltSigFit = [
-        "meanP[-0.0,-5.0,5.0]","sigmaP[1,0.7,6.0]","alphaP[2.0,1.2,3.5]",'nP[3,0.01,5]',"sigmaP_2[1.5,0.5,6.0]",
-        "meanF[-0.0,-12.0,12.0]","sigmaF[2,0.7,12.0]","alphaF[2.0,1.2,3.5]",'nF[3,0.01,5]',"sigmaF_2[2.0,0.5,6.0]",
-    ]
-    
-    tnpParAltBkgFit = [
-        "meanP[-0.0,-5.0,5.0]", "sigmaP[0.5,0.1,5.0]", "expalphaP[0.,-5.,5.]",
-        "meanF[-0.0,-5.0,5.0]", "sigmaF[0.5,0.02,3.0]",
-    ]
-
-    # for pt >= 55 and tracking (se also note above)
-    tnpParAltSigFitTrackingHighPt = [
-        "meanP[-0.0,-5.0,5.0]","sigmaP[1,0.7,6.0]","alphaP[2.0,1.2,3.5]",'nP[3,0,5]',"sigmaP_2[1.5,0.5,6.0]",
-        "meanF[4.0,-1.0,15.0]","sigmaF[2,0.7,15.0]","alphaF[2.0,1.2,3.5]",'nF[3,0,5]',"sigmaF_2[2.0,0.5,6.0]",
-    ]
-
-    tnpParNomFit.extend(bkgParFit)
-    tnpParAltSigFit.extend(bkgParFit)
-    tnpParAltSigFitTrackingHighPt.extend(bkgParFit)
-    
-    if not args.mcSig:
-        if args.useTrackerMuons:
-            # for tracker muons the fraction is much larger
-            tnpParNomFit.extend(["maxFracSigF[0.5]"])
-            tnpParAltSigFit.extend(["maxFracSigF[0.5]"])
-            tnpParAltSigFitTrackingHighPt.extend(["maxFracSigF[0.5]"])
-        else:
-            # use 0.2 if not using MergedStandAlone_nValidHits > 0
-            tnpParNomFit.extend(["maxFracSigF[0.5]"])
-            tnpParAltSigFit.extend(["maxFracSigF[0.5]"])
-            tnpParAltSigFitTrackingHighPt.extend(["maxFracSigF[0.5]"])
-
-    # ## Try to constrain some background parameters (for tracking might need to do it for signal instead, since S/B is small)
-    parConstraints = [
-        # Passing
-        #"Gaussian::constrainP_acmsP(acmsP,90,50)",
-        #"Gaussian::constrainP_betaP(betaP,0.05,0.25)",
-        #"Gaussian::constrainP_gammaP(gammaP,0.5,0.8)",
-        # failing
-        "Gaussian::constrainF_acmsF(acmsF,90,50)",
-        #"Gaussian::constrainF_betaF(betaF,0.05,0.25)",
-        "Gaussian::constrainF_betaF(betaF,5.0,25.0)",
-        "Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
-    ]
-
-            
-elif typeflag == 'reco':
-
-    bkgParFit = [
-        "expalphaP[0.,-5.,5.]",
-        "expalphaF[0.,-5.,5.]",
-        "acmsF[60.,40.,130.]","betaF[5.,0.1,40.]","gammaF[0.1, 0, 1]","peakF[90.0]",
-        "c1F[0.0,-1.0,1.0]","c2F[-0.5,-1.0,1.0]","c3F[0.0,-1.0,1.0]",
-        #"b0F[0.1,0,100]","b1F[0.1,0,100]","b2F[0.1,0,100]","b3F[0.1,0,100]"
-    ]
-    bkgShapes = [
-        "Exponential::bkgPass(x, expalphaP)",
-        #"RooCMSShape::bkgPass(x, acmsP, betaP, gammaP, peakP)",
-        "RooCMSShape::bkgFail(x, acmsF, betaF, gammaF, peakF)",
-        #"Bernstein::bkgFailBackup(x,{b0F,b1F,b2F,b3F})",
-        #"Exponential::bkgFailBackup(x, expalphaF)"
-        "Chebychev::bkgFailBackup(x,{c1F,c2F,c3F})",
-        #"Chebychev::bkgFailBackup(x,{c1F[0.0,-1.0,1.0],c2F[-0.5,-1.0,1.0],c3F[0.0,-1.0,1.0],c4F[-0.5,-1.0,1.0]})",
-        "Exponential::bkgFailMC(x, expalphaF)"
-    ]
-
-    tnpParNomFit = [
-        "meanP[-0.0,-5.0,5.0]","sigmaP[0.5,0.1,3.0]",
-        "meanF[-0.0,-3.0,3.0]","sigmaF[0.5,0.01,2.0]",
-    ]
-
-    # was to tune few bins for reco, but currently used everywhere
-    tnpParAltSigFit = [
-        "meanP[-0.0,-5.0,5.0]","sigmaP[1,0.7,6.0]","alphaP[2.0,1.2,3.5]",'nP[3,0.01,5]',"sigmaP_2[1.5,0.5,6.0]",
-        "meanF[-0.0,-5.0,5.0]","sigmaF[2,0.7,5.0]","alphaF[2.0,1.2,3.5]",'nF[3,0.1,5]',"sigmaF_2[2.0,0.5,6.0]",
-    ]
-    
-    tnpParAltBkgFit = [
-        "meanP[-0.0,-5.0,5.0]", "sigmaP[0.5,0.1,3.0]", "expalphaP[0.,-5.,5.]",
-        "meanF[-0.0,-3.0,3.0]", "sigmaF[0.5,0.01,2.0]",
-    ]
-
-    tnpParNomFit.extend(bkgParFit)
-    tnpParAltSigFit.extend(bkgParFit)
-
-    if not args.mcSig and args.useTrackerMuons:
-        # for tracker muons
-        tnpParNomFit.extend(["maxFracSigF[0.05]"] if args.binNumber in [24] else ["maxFracSigF[0.05]"] if args.binNumber in [50, 69, 79, 133, 420] else ["maxFracSigF[0.3]"])
-        tnpParAltSigFit.extend(["maxFracSigF[0.1]"] if args.binNumber in [29] else ["maxFracSigF[0.3]"])
-
-    # ## Try to constrain some background parameters (for tracking might need to do it for signal instead, since S/B is small)
-    parConstraints = [
-        # Passing
-        #"Gaussian::constrainP_acmsP(acmsP,90,50)",
-        #"Gaussian::constrainP_betaP(betaP,0.05,0.25)",
-        #"Gaussian::constrainP_gammaP(gammaP,0.5,0.8)",
-        # failing
-        "Gaussian::constrainF_acmsF(acmsF,90,50)",
-        "Gaussian::constrainF_betaF(betaF,5.0,25.0)",
-        "Gaussian::constrainF_gammaF(gammaF,0.5,0.8)",
-    ]
-
-else:
-
-    bkgParFit = [
-        "expalphaP[0.,-5.,5.]",
-        "expalphaF[0.,-5.,5.]",
-        "acmsF[60.,40.,130.]","betaF[5.,0.1,40.]","gammaF[0.1, 0, 1]","peakF[90.0]",
-        "c1F[0.0,-1.0,1.0]","c2F[-0.5,-1.0,1.0]","c3F[0.0,-1.0,1.0]",
-        #"argMassF[90.,60.,120.]","argSlopeF[5.,0.,20.]","argPowF[1.0,0.0,3.0]"
-    ]
-    bkgShapes = [
-        "Exponential::bkgPass(x, expalphaP)",
-        "Exponential::bkgFail(x, expalphaF)",
-        "Chebychev::bkgFailBackup(x,{c1F,c2F,c3F})",
-        #"ArgusBG::bkgFailBackup(x,argMassF,argSlopeF,argPowF)",
-     ]
-
-    tnpParNomFit = [
-        "meanP[-0.0,-5.0,5.0]","sigmaP[0.5,0.1,5.0]",
-        "meanF[-0.0,-5.0,5.0]","sigmaF[0.5,0.1,5.0]",
-    ]
-    
-    tnpParAltBkgFit = [
-        "meanP[-0.0,-5.0,5.0]","sigmaP[0.5,0.1,5.0]", "expalphaP[0.,-5.,5.]",
-        "meanF[-0.0,-5.0,5.0]","sigmaF[0.5,0.1,5.0]",
-    ]
-    
-    tnpParAltSigFit = [
-        "meanP[-0.0,-5.0,5.0]","sigmaP[1,0.7,6.0]","alphaP[2.0,1.2,3.5]",'nP[3,0.01,5]',"sigmaP_2[1.5,0.5,6.0]",
-        "meanF[-0.0,-5.0,5.0]","sigmaF[2,0.7,15.0]","alphaF[2.0,1.2,3.5]",'nF[3,0.01,5]',"sigmaF_2[2.0,0.5,6.0]",
-    ]
-    tnpParNomFit.extend(bkgParFit)
-    tnpParAltSigFit.extend(bkgParFit)
-    
-    parConstraints = []
-#####
-
-# add second gaussian at low mass around 70 to model FSR bump for working points with isolation
-flagsWithFSR = ["iso", "trigger", "isonotrig"]
-if any(x in typeflag for x in flagsWithFSR):
-    fsrGauss = ["fsrMeanF[70.0,65.0,80.0]", "fsrSigmaF[1.0,1.2,5.0]"]
-    tnpParAltSigFit.extend(fsrGauss)
 
 ########################
-
 
 
 if args.outdir:
@@ -372,7 +214,7 @@ samplesDef = {
     'data'   : samples_data,
     'mcNom'  : samples_dy,
     'mcAltSig' : None,
-    'mcBkg'  : samples_bkg,
+    'mcBkg'  : samples_bkg if typeflag in ["reco", "tracking"] else None,  #FIXME: it should be written better
     #'tagSel' : None,
 }
 
@@ -409,7 +251,7 @@ for sample in samplesDef.values():
     if sample is None: 
         continue
     setattr( sample, 'mcRef'     , sampleMC )
-    if args.altBkg: setattr( sample, 'bkgRef'    , samplesDef['mcBkg'] )
+    setattr( sample, 'bkgRef'    , samplesDef['mcBkg'] ) if typeflag in ["reco", "tracking"] else None
     setattr( sample, 'nominalFit', '%s/%s_%s_nominalFit.root' % ( outputDirectory , sample.getName(), args.flag ) )
     setattr( sample, 'altSigFit' , '%s/%s_%s_altSigFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
     setattr( sample, 'altBkgFit' , '%s/%s_%s_altBkgFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
@@ -430,62 +272,62 @@ else:
     fileName = sampleToFit.nominalFit
     fitType  = 'nominalFit'
 
-
-plottingDir = '%s/plots/%s/%s' % (outputDirectory,sampleToFit.getName(),fitType)
+plottingDir = f"{outputDirectory}/plots/{sampleToFit.getName()}/{fitType}"
 createPlotDirAndCopyPhp(plottingDir)
 
-    
+flagsWithFSR = ["iso", "trigger", "isonotrig"]
+
+
+ps = fitParsAndShapes(typeflag)
+
+# general fit settings
+#useAllTemplateForFail = False if typeflag not in flagsWithFSR else False # use all probes to build MC template for failing probes when fitting data nominal
+#maxFailIntegralToUseAllProbe = 300 if typeflag not in ["tracking"] else -1 # use all probes for the failing template only when stat is very small, otherwise sometimes the fit doesn't work well
+symmConvSigFail = True if typeflag in ["tracking", "reco", "veto"] else False # use Gaussian as resolution function for altSig model
+modelFSR = True if typeflag in flagsWithFSR else False # add Gaussian to model low mass bump from FSR, in altSig fit
+useBBfail = True if typeflag in ["reco", "tracking"] else False 
+
+
+## For now the fitting strategies are hardcoded here, it may be not the best.
+## Eventually we should create a class that better handles the strategies, the
+## parameters and pdfs definitions, but leaves also space for customization
+fitterNominal = fitStrategies[typeflag]['nominal']
+fitterAltSig  = fitStrategies[typeflag]['altSig']
+fitterAltBkg  = fitStrategies[typeflag]['altBkg']
+
+
 if args.doFit:
     print()
     print(">>> Running fits")
 
-    #useAllTemplateForFail = True if typeflag not in flagsWithFSR else False # use all probes to build MC template for failing probes when fitting data nominal
-    #maxFailIntegralToUseAllProbe = 300 if typeflag not in ["tracking"] else -1 # use all probes for the failing template only when stat is very small, otherwise sometimes the fit doesn't work well
-    useAllTemplateForFail = False
-    maxFailIntegralToUseAllProbe = -1
-    altSignalFail = True if typeflag in ["tracking", "reco", "veto"] else False # use Gaussian as resolution function for altSig model
-    modelFSR = True if typeflag in flagsWithFSR else False # add Gaussian to model low mass bump from FSR, in altSig fit
     def parallel_fit(ib): ## parallel
         #print("tnpBins['bins'][ib] = ",tnpBins['bins'][ib])
-        if (args.binNumber >= 0 and ib == args.binNumber) or args.binNumber < 0:
+        if not ((args.binNumber>=0 and ib==args.binNumber) or (args.binNumber<0)): return
             
-            if not (args.altSig or args.altBkg):
-                fitUtils.histFitterNominal(sampleToFit, tnpBins['bins'][ib], tnpParNomFit, massbins, massmin, massmax,
-                                            useAllTemplateForFail, maxFailIntegralToUseAllProbe, 
-                                            constrainPars=parConstraints, bkgShapes=bkgShapes)
-            elif args.altSig:
-                if typeflag == 'tracking':
-                    # constrainSignalFailFromMC sets the data fit parameters to MC value +/- 3*uncertainty
-                    if fitUtils.ptMin(tnpBins['bins'][ib]) > 54.0: # force peak mean more on the right for high pt bins and tracking efficiency
-                        fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFitTrackingHighPt, massbins, massmin, massmax,
-                                                  altSignalFail=altSignalFail, modelFSR=False, constrainSignalFailFromMC=False, constrainPars=parConstraints, bkgShapes=bkgShapes)
-                    else:
-                        fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
-                                                  altSignalFail=altSignalFail, modelFSR=False, constrainSignalFailFromMC=False, constrainPars=parConstraints, bkgShapes=bkgShapes)
-                elif typeflag == 'reco': 
-                        fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
-                                                  altSignalFail=altSignalFail, modelFSR=False, constrainPars=parConstraints, bkgShapes=bkgShapes)
-                else:
-                    #fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
-                    #                          altSignalFail=altSignalFail, modelFSR=modelFSR, zeroBackground=True)
-                    fitUtils.histFitterAltSig(sampleToFit, tnpBins['bins'][ib], tnpParAltSigFit, massbins, massmin, massmax,
-                                              altSignalFail=altSignalFail, modelFSR=modelFSR, constrainPars=parConstraints, bkgShapes=bkgShapes)
-            elif args.altBkg and not args.mcSig:
-                '''
-                fitUtils.histFitterAltBkg(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                                  useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=parConstraints, bkgShapes=bkgShapes)
-                '''
-                fitUtils.histFitterAltBkgTemplate(sampleToFit, tnpBins['bins'][ib], tnpParAltBkgFit, massbins, massmin, massmax,
-                                                  useAllTemplateForFail, maxFailIntegralToUseAllProbe, constrainPars=[], bkgShapes=[], isBBfail=True)
-            else:
-                # This is the case for fitting on MC with altSig/altBkg models. Not used for now
-                pass
-
-    #parallel_fit(0)
-
+        if not (args.altSig or args.altBkg) and fitterNominal:
+            fitterNominal(sampleToFit, tnpBins['bins'][ib], massbins, massmin, massmax,
+                          ps["tnpParNomFit"], ps["tnpShapesNominal"], constrainPars=[])
+        
+        elif args.altSig and (args.mcSig is False) and fitterAltSig:
+            key_pars_altSig = "tnpParAltSigFitTrackingHighPt" if (fitUtils.ptMin(tnpBins['bins'][ib])>54.0 and typeflag=="tracking") else "tnpParAltSigFit" # force peak mean more on the right for high pt bins and tracking efficiency
+            fitterAltSig(sampleToFit, tnpBins['bins'][ib], massbins, massmin, massmax,
+                         ps[key_pars_altSig], ps["tnpShapesAltSig"], constrainPars=[], 
+                         symmConvSigFail=symmConvSigFail, modelFSR=modelFSR)
+        
+        elif args.altBkg and (args.mcSig is False) and fitterAltBkg:
+            fitterAltBkg(sampleToFit, tnpBins['bins'][ib], massbins, massmin, massmax,
+                         ps["tnpParAltBkgFit"], ps["tnpShapesAltBkg"], constrainPars=ps["parConstraints"])
+        
+        else:
+            # This is the case for fitting on MC with altSig/altBkg models. Not used for now
+            pass
+    
+    parallel_fit(0)
+    '''
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
     args.mergeFiles = True
+    '''
 
 ####################################################################
 ##### Merging the files with the results into a single one
