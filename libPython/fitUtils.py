@@ -401,15 +401,15 @@ def histFitterAltBkgTemplate(sample, tnpBin, tnpWorkspaceParam, massbins=60, mas
 
     if isBBfail is False:
         defaultBkgShapes = ["Exponential::bkgPass(x, expalphaP)", 
-                            "RooHistPdf::bkgFail(x, hTotBkgFail, 0)",
-                            "RooHistPdf::bkgFailBackup(x, hTotBkgFail, 0)"]
+                            "RooHistPdf::bkgFail(x, hBkgFail, 0)",
+                            "RooHistPdf::bkgFailBackup(x, hBkgFail, 0)"]
     else:
         defaultBkgShapes = ["Exponential::bkgPass(x, expalphaP)",
-                            "RooHistPdf::bkgFailBackup(x, hTotBkgFail, 0)"]
+                            "RooHistPdf::bkgFailBackup(x, hBkgFail, 0)"]
         
     tnpWorkspaceFunc = [
-        "Gaussian::sigResPass(x,meanP,sigmaP)",
-        "Gaussian::sigResFail(x,meanF,sigmaF)",
+        "Gaussian::sigResPass(x, meanP, sigmaP)",
+        "Gaussian::sigResFail(x, meanF, sigmaF)",
         ]
     
     tnpWorkspaceFunc.extend(bkgShapes if len(bkgShapes) else defaultBkgShapes)

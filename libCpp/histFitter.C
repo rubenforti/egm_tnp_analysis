@@ -152,7 +152,7 @@ tnpFitter::tnpFitter(TH1 *hPass, TH1 *hFail, std::string histname, int massbins,
         if (hFail->GetBinError(ib) <= 0.0) hFail->SetBinError(ib,1.0);
     }      
 
-    _work = new RooWorkspace("w") ;
+    _work = new RooWorkspace("w");
     _work->factory(TString::Format("x[%f,%f]", massmin, massmax));
 
     RooDataHist rooPass("hPass", "hPass", *_work->var("x"), hPass);
@@ -243,7 +243,7 @@ void tnpFitter::setWorkspace(const std::vector<std::string>& workspace, bool isM
         _work->factory(workspace[icom].c_str());
     }
 
-    if (not analyticPhysicsShape) {
+    if (!analyticPhysicsShape) {
         _work->factory("HistPdf::sigPhysPass(x,hZPass,3)");
         _work->factory("HistPdf::sigPhysFail(x,hZFail,3)");
     }
@@ -449,15 +449,16 @@ int tnpFitter::fits(const std::string& title) {
     pPass->SetTitle("passing probe");
     pFail->SetTitle("failing probe");
 
-    _work->data("hPass")->plotOn(pPass, Name("data_pass") );
-    _work->pdf(lastNamePassPDF.c_str())->plotOn(pPass, Name("model_pass"), LineColor(kRed));
-    _work->pdf(lastNamePassPDF.c_str())->plotOn(pPass, Name("bkg_pass"),   LineColor(kBlue), Components(bkgNamePass.c_str()), LineStyle(kDashed));
-    //_work->data("hPass")->plotOn(pPass);
+    
+    _work->data("hPass")->plotOn(pPass, Name("data_pass"), MarkerSize(0.5), MarkerStyle(20));
+    _work->pdf(lastNamePassPDF.c_str())->plotOn(pPass, Name("model_pass"), LineColor(kRed),  LineWidth(3));
+    _work->pdf(lastNamePassPDF.c_str())->plotOn(pPass, Name("bkg_pass"),   LineColor(kBlue), LineWidth(3), Components(bkgNamePass.c_str()), LineStyle(7));
+    _work->data("hPass")->plotOn(pPass, Name("data_pass"), MarkerSize(0.5), MarkerStyle(20));
 
-    _work->data("hFail")->plotOn( pFail, Name("data_fail") );
-    _work->pdf(lastNameFailPDF.c_str())->plotOn(pFail, Name("model_fail"), LineColor(kRed));
-    _work->pdf(lastNameFailPDF.c_str())->plotOn(pFail, Name("bkg_fail"),   LineColor(kBlue), Components(bkgNameFail.c_str()),LineStyle(kDashed));
-    //_work->data("hFail") ->plotOn( pFail );
+    _work->data("hFail")->plotOn(pFail, Name("data_fail"), MarkerSize(0.5), MarkerStyle(20));
+    _work->pdf(lastNameFailPDF.c_str())->plotOn(pFail, Name("model_fail"), LineColor(kRed),  LineWidth(3));
+    _work->pdf(lastNameFailPDF.c_str())->plotOn(pFail, Name("bkg_fail"),   LineColor(kBlue), LineWidth(3), Components(bkgNameFail.c_str()), LineStyle(7));
+    _work->data("hFail")->plotOn(pFail, Name("data_fail"), MarkerSize(0.5), MarkerStyle(20));
 
     std::string canvasName = _histname_base + "_Canv"; // TString::Format("%s_Canv",_histname_base.c_str()); 
     TCanvas * c = new TCanvas(canvasName.c_str(), canvasName.c_str(), 1150, 500);
@@ -544,13 +545,17 @@ void tnpFitter::textParForCanvas(TPad *p, RooFitResult *resP, RooFitResult *resF
     RooArgList listParFinalP = resP->floatParsFinal();
     for (int ip=0; ip<listParFinalP.getSize(); ip++) {
         TString vName = listParFinalP[ip].GetName();
-        text->AddText(TString::Format("   - %s \t= %1.3f #pm %1.3f", vName.Data(), _work->var(vName)->getVal(), _work->var(vName)->getError()));
+        if (!vName.Contains("gamma")) {
+            text->AddText(TString::Format("   - %s \t= %1.3f #pm %1.3f", vName.Data(), _work->var(vName)->getVal(), _work->var(vName)->getError()));
+        }
     }
 
     RooArgList listParFinalF = resF->floatParsFinal();
     for(int ip=0; ip<listParFinalF.getSize(); ip++) {
         TString vName = listParFinalF[ip].GetName();
-        text->AddText(TString::Format("   - %s \t= %1.3f #pm %1.3f", vName.Data(), _work->var(vName)->getVal(), _work->var(vName)->getError()));
+        if (!vName.Contains("gamma")) {
+            text->AddText(TString::Format("   - %s \t= %1.3f #pm %1.3f", vName.Data(), _work->var(vName)->getVal(), _work->var(vName)->getError()));
+        }
     }
 
     p->cd();
