@@ -39,6 +39,7 @@ compileMacro("libCpp/FileMerger.C")
 ### tnp library
 import libPython.binUtils  as tnpBiner
 import libPython.rootUtils as tnpRoot
+import libPython.fitUtils as fitUtils
         
 parser = argparse.ArgumentParser()
 parser.add_argument('--flag'       , default = None        , help ='WP to test')
@@ -86,14 +87,6 @@ binning_pt  = [24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 
 typeflag = args.flag.split('_')[1]
 
 print("typeflag = ",typeflag)
-
-###########################################################
-# Importing fitter handlers depending on which type of efficiency we are running on.
-# Ugly, but for now it works
-if typeflag in ["reco", "tracking"]:
-    import libPython.fitUtils_reco_trk as fitUtils
-else:
-    import libPython.fitUtils as fitUtils
 
 ###########################################################
 
@@ -203,7 +196,8 @@ if args.createBins:
     print(f'Note than any additional call to createBins will overwrite directory {outputDirectory}')
     sys.exit(0)
 
-tnpBins = pickle.load( open( f'{outputDirectory}/bining.pkl', 'rb') )
+with open(f'{outputDirectory}/bining.pkl', 'rb') as f:
+    tnpBins = pickle.load(f)
 
 
 ####################################################################
@@ -248,13 +242,13 @@ if sampleMC is None:
     sys.exit(1)
 
 for sample in samplesDef.values():
-    if sample is None: 
+    if sample is None:
         continue
     setattr( sample, 'mcRef'     , sampleMC )
     setattr( sample, 'bkgRef'    , samplesDef['mcBkg'] ) if typeflag in ["reco", "tracking"] else None
-    setattr( sample, 'nominalFit', '%s/%s_%s_nominalFit.root' % ( outputDirectory , sample.getName(), args.flag ) )
-    setattr( sample, 'altSigFit' , '%s/%s_%s_altSigFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
-    setattr( sample, 'altBkgFit' , '%s/%s_%s_altBkgFit.root'  % ( outputDirectory , sample.getName(), args.flag ) )
+    setattr( sample, 'nominalFit', '%s/%s_nominalFit.root' % ( outputDirectory , sample.getName()) )
+    setattr( sample, 'altSigFit' , '%s/%s_altSigFit.root'  % ( outputDirectory , sample.getName()) )
+    setattr( sample, 'altBkgFit' , '%s/%s_altBkgFit.root'  % ( outputDirectory , sample.getName()) )
 
 sampleToFit = samplesDef['data'] if not args.mcSig else sampleMC
 
@@ -275,25 +269,23 @@ else:
 plottingDir = f"{outputDirectory}/plots/{sampleToFit.getName()}/{fitType}"
 createPlotDirAndCopyPhp(plottingDir)
 
-flagsWithFSR = ["iso", "trigger", "isonotrig"]
-
 
 ps = fitParsAndShapes(typeflag)
 
 # general fit settings
-#useAllTemplateForFail = False if typeflag not in flagsWithFSR else False # use all probes to build MC template for failing probes when fitting data nominal
-#maxFailIntegralToUseAllProbe = 300 if typeflag not in ["tracking"] else -1 # use all probes for the failing template only when stat is very small, otherwise sometimes the fit doesn't work well
-symmConvSigFail = True if typeflag in ["tracking", "reco", "veto"] else False # use Gaussian as resolution function for altSig model
-modelFSR = True if typeflag in flagsWithFSR else False # add Gaussian to model low mass bump from FSR, in altSig fit
-useBBfail = True if typeflag in ["reco", "tracking"] else False 
+symmConvSigFail = False if typeflag in ["tracking", "reco", "veto"] else False # use Gaussian as resolution function for altSig model
+modelFSR = True if typeflag in ["iso", "trigger", "isonotrig"] else False # add Gaussian to model low mass bump from FSR, in altSig fit
+useBBFail = False 
 
+fitterNominal = getattr(fitUtils, fitStrategies[typeflag]['Nominal'])
+fitterAltSig  = getattr(fitUtils, fitStrategies[typeflag]['AltSig'])
+fitterAltBkg  = getattr(fitUtils, fitStrategies[typeflag]['AltBkg']) if fitStrategies[typeflag]['AltBkg'] else None
 
-## For now the fitting strategies are hardcoded here, it may be not the best.
-## Eventually we should create a class that better handles the strategies, the
-## parameters and pdfs definitions, but leaves also space for customization
-fitterNominal = fitStrategies[typeflag]['nominal']
-fitterAltSig  = fitStrategies[typeflag]['altSig']
-fitterAltBkg  = fitStrategies[typeflag]['altBkg']
+if fitterNominal is None:
+    sys.exit("[tnpEGM_fitter]: No fitting strategy defined for nominal fit")
+
+if fitterAltSig is None and fitterAltBkg is None:
+    sys.exit("[tnpEGM_fitter]: No fitting strategy defined for alternative fit")
 
 
 if args.doFit:
@@ -304,30 +296,31 @@ if args.doFit:
         #print("tnpBins['bins'][ib] = ",tnpBins['bins'][ib])
         if not ((args.binNumber>=0 and ib==args.binNumber) or (args.binNumber<0)): return
             
-        if not (args.altSig or args.altBkg) and fitterNominal:
-            fitterNominal(sampleToFit, tnpBins['bins'][ib], massbins, massmin, massmax,
-                          ps["tnpParNomFit"], ps["tnpShapesNominal"], constrainPars=[])
+        if not (args.altSig or args.altBkg):
+            fitterNominal(sampleToFit, tnpBins['bins'][ib], typeflag, "Nominal", massbins, massmin, massmax,
+                          ps[f"tnpParNominal"], ps[f"tnpShapesNominal"], ps[f"parConstraints"])
         
-        elif args.altSig and (args.mcSig is False) and fitterAltSig:
-            key_pars_altSig = "tnpParAltSigFitTrackingHighPt" if (fitUtils.ptMin(tnpBins['bins'][ib])>54.0 and typeflag=="tracking") else "tnpParAltSigFit" # force peak mean more on the right for high pt bins and tracking efficiency
-            fitterAltSig(sampleToFit, tnpBins['bins'][ib], massbins, massmin, massmax,
-                         ps[key_pars_altSig], ps["tnpShapesAltSig"], constrainPars=[], 
-                         symmConvSigFail=symmConvSigFail, modelFSR=modelFSR)
+        elif args.altSig and fitterAltSig:
+            key_pars_altSig = f"tnpParAltSig_trackingHighPt" if (fitUtils.ptMin(tnpBins['bins'][ib])>54.0 and typeflag=="tracking") \
+                              else f"tnpParAltSig" # force peak mean more on the right for high pt bins and tracking efficiency
+            fitterAltSig(sampleToFit, tnpBins['bins'][ib], typeflag, "AltSig", massbins, massmin, massmax,
+                         ps[key_pars_altSig], ps[f"tnpShapesAltSig"], ps[f"parConstraints"], 
+                         modelFSR=modelFSR, symmConvSigFail=symmConvSigFail, useBBFail=False, isMC=args.mcSig, doPrefit="sig-both", constrainMode="")
         
         elif args.altBkg and (args.mcSig is False) and fitterAltBkg:
-            fitterAltBkg(sampleToFit, tnpBins['bins'][ib], massbins, massmin, massmax,
-                         ps["tnpParAltBkgFit"], ps["tnpShapesAltBkg"], constrainPars=ps["parConstraints"])
+            fitterAltBkg(sampleToFit, tnpBins['bins'][ib], typeflag, "AltBkg", massbins, massmin, massmax,
+                         ps[f"tnpParAltBkg"], ps[f"tnpShapesAltBkg"], ps["parConstraints"])
         
         else:
             # This is the case for fitting on MC with altSig/altBkg models. Not used for now
             pass
     
-    parallel_fit(0)
-    '''
+    # parallel_fit(0)
+    
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
     args.mergeFiles = True
-    '''
+
 
 ####################################################################
 ##### Merging the files with the results into a single one
@@ -337,7 +330,7 @@ if args.mergeFiles:
     print()
     print(">>> Merging root files...")
     print(f"Output: {fileName}")
-    fileNameNoExt = fileName.rstrip(".root")
+    fileNameNoExt = fileName.replace(".root", "")
     if args.binNumber >= 0:
         thisbin = tnpBins['bins'][args.binNumber]['name']
         rootfileBin = safeOpenFile(f"{fileNameNoExt}_bin_{thisbin}.root")

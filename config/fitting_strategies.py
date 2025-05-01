@@ -1,34 +1,32 @@
-from libPython import fitUtils_reco_trk as fitUtils
-
 fitStrategies = {
     "reco" : {
-        "nominal" : fitUtils.histFitterNominal,
-        "altSig"  : fitUtils.histFitterAltSig,
-        "altBkg"  : fitUtils.histFitterAltBkg
+        "Nominal" : "histFitterAllTemplate",
+        "AltSig"  : "histFitterAnalyticSig",
+        "AltBkg"  : "histFitterAnalyticBkg"
     },
     "tracking" : {
-        "nominal" : fitUtils.histFitterNominal,
-        "altSig"  : fitUtils.histFitterAltSig,
-        "altBkg"  : fitUtils.histFitterAltBkg
+        "Nominal" : "histFitterAllTemplate",
+        "AltSig"  : "histFitterAnalyticSig",
+        "AltBkg"  : "histFitterAnalyticBkg"
     },
     "idip" : {
-        "nominal" : fitUtils.histFitterAltBkg,
-        "altSig"  : fitUtils.histFitterAllAnalytic,
-        "altBkg"  : None
+        "Nominal" : "histFitterAnalyticBkg",
+        "AltSig"  : "histFitterAllAnalytic",
+        "AltBkg"  : None
     },
     "trigger" : {
-        "nominal" : fitUtils.histFitterAltBkg,
-        "altSig"  : fitUtils.histFitterAllAnalytic,
-        "altBkg"  : None
+        "Nominal" : "histFitterAnalyticBkg",
+        "AltSig"  : "histFitterAllAnalytic",
+        "AltBkg"  : None
     },
     "iso" : {
-        "nominal" : fitUtils.histFitterAltBkg,
-        "altSig"  : fitUtils.histFitterAllAnalytic,
-        "altBkg"  : None
+        "Nominal" : "histFitterAnalyticBkg",
+        "AltSig"  : "histFitterAllAnalytic",
+        "AltBkg"  : None
     },
     "veto" : {
-        "nominal" : fitUtils.histFitterAltBkg,
-        "altSig"  : fitUtils.histFitterAllAnalytic,
-        "altBkg"  : None
+        "Nominal" : "histFitterAnalyticBkg",
+        "AltSig"  : "histFitterAllAnalytic",
+        "AltBkg"  : None
     }
 }
