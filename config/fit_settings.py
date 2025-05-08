@@ -1,10 +1,38 @@
 """
 """
 
-def fitGeneralSettings(typeflag):
+def fitBinning(typeflag, extendLowPtForVeto=False):
     """
     """
-    pass
+
+    binning_eta = [round(-2.4+0.1*i, 2) for i in range(49)]
+
+    if typeflag == 'reco':
+        massbins, massmin, massmax = 60, 60, 120
+        binning_pt = [24., 26., 30., 34., 38., 42., 46., 50., 55., 60., 65.]
+        lowPtBinsVeto = [10., 15., 20.]
+    
+    elif typeflag == 'tracking':
+        massbins, massmin, massmax = 80, 50, 130
+        binning_pt = [24., 35., 45., 55., 65.]
+        lowPtBinsVeto = [10., 15.]
+    
+    else:
+        massbins, massmin, massmax = 60, 60, 120
+        binning_pt  = [24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 55., 60., 65.]
+        lowPtBinsVeto = [10., 15., 20.]
+
+    if extendLowPtForVeto: 
+        binning_pt = lowPtBinsVeto + binning_pt
+
+    binningDef_mass = {"nbins": massbins, "min": massmin, "max": massmax}
+    binningDef = {
+        'eta' : {'var': 'eta', 'type': 'float', 'bins': binning_eta},
+        'pt'  : {'var': 'pt',  'type': 'float', 'bins': binning_pt}
+    }
+
+    return binningDef_mass, binningDef
+
 
 def fitParsAndShapes(typeflag):
     """
@@ -37,6 +65,22 @@ def fitParsAndShapes(typeflag):
             "expalphaP[0., -5., 5.]",
         ]
 
+        tnpShapesAltSig = [
+            "BreitWigner::sigPhysPass(x, 91.1876, 2.4952)",
+            "Gaussian::sigResPass(x, meanP, sigmaP)",
+            "RooCBExGaussShape::sigResPass(x, meanP, sigmaP, alphaP, nP, sigmaP_2, tailLeft)",
+            "Exponential::bkgPass(x, expalphaP)",
+            "BreitWigner::sigPhysFail(x, 91.1876, 2.4952)",
+            "Gaussian::sigResFail(x, meanF, sigmaF)",
+            "RooCBExGaussShape::sigResFail(x, meanF, sigmaF, alphaF, nF, sigmaF_2, tailLeft)",
+        ]
+        tnpParAltSig = [
+            "tailLeft[-1]", "tailLeft[1]",
+            "meanP[-0., -5., 5.]", "sigmaP[1.0, 0.7, 6.0]", "alphaP[2.0, 1.2, 3.5]", "nP[3.0, 0.01, 5.0]", "sigmaP_2[1.5, 0.5, 6.0]",
+            "meanF[-0., -5., 5.]", "sigmaF[2.0, 0.7, 5.0]", "alphaF[2.0, 1.2, 3.5]", "nF[3.0, 0.1,  5.0]", "sigmaF_2[2.0, 0.5, 6.0]",
+            "expalphaP[0., -5., 5.]",
+        ]
+
         tnpShapesAltBkg = [
             "Gaussian::sigResPass(x, meanP, sigmaP)",
             "Gaussian::sigResFail(x, meanF, sigmaF)",
@@ -50,21 +94,6 @@ def fitParsAndShapes(typeflag):
             "expalphaP[0., -5., 5.]",
             "acmsF[60., 40., 130.]", "betaF[5.0, 0.1, 40.0]", "gammaF[0.1, 0.0, 1.0]", "peakF[90.0]",
             "c1F[0.0, -1.0, 1.0]", "c2F[-0.5, -1.0, 1.0]", "c3F[0.0, -1.0, 1.0]"
-        ]
-
-        tnpShapesAltSig = [
-            "BreitWigner::sigPhysPass(x, 91.1876, 2.4952)",
-            "Gaussian::sigResPass(x, meanP, sigmaP)",
-            "RooCBExGaussShape::sigResPass(x, meanP, sigmaP, alphaP, nP, sigmaP_2, tailLeft)",
-            "BreitWigner::sigPhysFail(x, 91.1876, 2.4952)",
-            "Gaussian::sigResFail(x, meanF, sigmaF)",
-            "RooCBExGaussShape::sigResFail(x, meanF, sigmaF, alphaF, nF, sigmaF_2, tailLeft)",
-        ]
-        tnpParAltSig = [
-            "tailLeft[-1]", "tailLeft[1]",
-            "meanP[-0., -5., 5.]", "sigmaP[1.0, 0.7, 6.0]", "alphaP[2.0, 1.2, 3.5]", "nP[3.0, 0.01, 5.0]", "sigmaP_2[1.5, 0.5, 6.0]",
-            "meanF[-0., -5., 5.]", "sigmaF[2.0, 0.7, 5.0]", "alphaF[2.0, 1.2, 3.5]", "nF[3.0, 0.1,  5.0]", "sigmaF_2[2.0, 0.5, 6.0]",
-            "expalphaP[0., -5., 5.]",
         ]
         
         
@@ -94,25 +123,12 @@ def fitParsAndShapes(typeflag):
             "expalphaP[0., -5., 5.]",
         ]
 
-        tnpShapesAltBkg = [
-            "Gaussian::sigResPass(x, meanP, sigmaP)",
-            "Gaussian::sigResFail(x, meanF, sigmaF)",
-            "Exponential::bkgPass(x, expalphaP)",
-            "RooCMSShape::bkgFail(x, acmsF, betaF, gammaF, peakF)",
-            "Chebychev::bkgFailBackup(x, {c1F,c2F,c3F,c4F})",
-        ]
-        tnpParAltBkg = [
-            "meanP[-0., -5., 5.]", "sigmaP[0.5, 0.1,  5.0]",
-            "meanF[-0., -5., 5.]", "sigmaF[0.5, 0.02, 3.0]",
-            "expalphaP[0., -5., 5.]",
-            "acmsF[60., 40., 130.]", "betaF[5.0, 0.1, 40.0]", "gammaF[0.1, 0.0, 1.0]", "peakF[90.0]",
-            "c1F[0.0, -1.0, 1.0]", "c2F[-0.5, -1.0, 1.0]", "c3F[0.0, -1.0, 1.0]", "c4F[-0.5, -1.0, 1.0]"
-        ]
-
         tnpShapesAltSig = [
             "BreitWigner::sigPhysPass(x, 91.1876, 2.4952)",
+            "Gaussian::sigResPass(x, meanP, sigmaP)",
             "RooCBExGaussShape::sigResPass(x, meanP, sigmaP, alphaP, nP, sigmaP_2, tailLeft)",
             "BreitWigner::sigPhysFail(x, 91.1876, 2.4952)",
+            "Exponential::bkgPass(x, expalphaP)",
             "Gaussian::sigResFail(x, meanF, sigmaF)",
             "RooCBExGaussShape::sigResFail(x, meanF, sigmaF, alphaF, nF, sigmaF_2, tailLeft)",
         ]
@@ -127,6 +143,21 @@ def fitParsAndShapes(typeflag):
             "meanP[0., -5.,  5.]", "sigmaP[1.0, 0.7,  6.0]", "alphaP[2.0, 1.2, 3.5]", "nP[3., 0., 5.]", "sigmaP_2[1.5, 0.5, 6.0]",
             "meanF[4., -1., 15.]", "sigmaF[2.0, 0.7, 15.0]", "alphaF[2.0, 1.2, 3.5]", "nF[3., 0., 5.]", "sigmaF_2[2.0, 0.5, 6.0]",
             "expalphaP[0., -5., 5.]"
+        ]
+
+        tnpShapesAltBkg = [
+            "Gaussian::sigResPass(x, meanP, sigmaP)",
+            "Gaussian::sigResFail(x, meanF, sigmaF)",
+            "Exponential::bkgPass(x, expalphaP)",
+            "RooCMSShape::bkgFail(x, acmsF, betaF, gammaF, peakF)",
+            "Chebychev::bkgFailBackup(x, {c1F,c2F,c3F,c4F})",
+        ]
+        tnpParAltBkg = [
+            "meanP[-0., -5., 5.]", "sigmaP[0.5, 0.1,  5.0]",
+            "meanF[-0., -5., 5.]", "sigmaF[0.5, 0.02, 3.0]",
+            "expalphaP[0., -5., 5.]",
+            "acmsF[60., 40., 130.]", "betaF[5.0, 0.1, 40.0]", "gammaF[0.1, 0.0, 1.0]", "peakF[90.0]",
+            "c1F[0.0, -1.0, 1.0]", "c2F[-0.5, -1.0, 1.0]", "c3F[0.0, -1.0, 1.0]", "c4F[-0.5, -1.0, 1.0]"
         ]
 
         parConstraints = [

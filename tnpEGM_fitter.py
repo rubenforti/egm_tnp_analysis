@@ -1,33 +1,37 @@
 #!/usr/bin/env python3 
 
-### python specific import
 import os
+import sys
+import re
+import argparse
+import datetime
 import pickle
 import shutil
-from multiprocessing import Pool
-import datetime
-import copy
-import argparse
-import re
 from array import array
+from multiprocessing import Pool
+import ROOT
 
-## safe batch mode
-import sys
+## Safe batch mode
 args = sys.argv[:]
 sys.argv = ['-b']
-import ROOT
 sys.argv = args
 ROOT.gROOT.SetBatch(True)
 ROOT.PyConfig.IgnoreCommandLineOptions = True
-
 ROOT.gInterpreter.ProcessLine(".O3")
 
-from libPython.tnpClassUtils import tnpSample
-from libPython.plotUtils import compileMacro, testBinning, safeGetObject, safeOpenFile, createPlotDirAndCopyPhp, compileFileMerger
-from libPython.checkFitStatus import checkFit
 
-## import fitting settings and strategies
-from config.fit_settings import fitParsAndShapes
+## TnP libraries and functions
+import libPython.fitUtils  as tnpFit
+from libPython.binUtils import createBins, testBinning, binMinPt
+from libPython.checkFitStatus import checkFit
+from libPython.histUtils import makePassFailHistograms
+from libPython.plotUtils import createPlotDirAndCopyPhp
+from libPython.rootUtils import compileMacro, safeGetObject, safeOpenFile, getAllEffi
+from libPython.tnpClassUtils import tnpSample
+
+
+## Import fitting settings and strategies
+from config.fit_settings import fitBinning, fitParsAndShapes
 from config.fitting_strategies import fitStrategies
 
 compileMacro("libCpp/RooCBExGaussShape.cc")
@@ -36,119 +40,85 @@ compileMacro("libCpp/histFitter.C")
 #compileFileMerger("libCpp/FileMerger.C")
 compileMacro("libCpp/FileMerger.C")
 
-### tnp library
-import libPython.binUtils  as tnpBiner
-import libPython.rootUtils as tnpRoot
-import libPython.fitUtils as fitUtils
-        
+#################################################
+#### General settings for the fit, hardcoded here
+
+
+
+#################################################
+
+## Parsing arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--flag'       , default = None        , help ='WP to test')
-parser.add_argument('--inputMC'    , type=str, default = '', help = "MC input file which contains 3d histograms")
-parser.add_argument('--inputData'  , type=str, default = '', help = "Data input file which contains 3d histograms")
-parser.add_argument('--inputBkg'   , type=str, default = '', help = "Background input file which contains 3d histograms")
-parser.add_argument('--era'        , type=str, default = '', choices=["BtoF", "GtoH"], help ='era to perform tnp fits for')
-parser.add_argument('--checkBins'  , action='store_true'  ,  help = 'check  bining definition')
-parser.add_argument('--createBins' , action='store_true'  ,  help = 'create bining definition')
-parser.add_argument('--createHists', action='store_true'  ,  help = 'create histograms')
-parser.add_argument('--sample'     , default='all'        ,  help = 'create histograms (per sample, expert only)')
-parser.add_argument('--altSig'     , action='store_true'  ,  help = 'alternate signal model fit')
-parser.add_argument('--altBkg'     , action='store_true'  ,  help = 'alternate background model fit')
-parser.add_argument('--doFit'      , action='store_true'  ,  help = 'fit sample (sample should be defined in settings.py)')
-parser.add_argument('--mcSig'      , action='store_true'  ,  help = 'fit MC nom [to init fit params]')
-parser.add_argument('--mergeFiles' , action='store_true'  ,  help = 'merging files')
-parser.add_argument('--sumUp'      , action='store_true'  ,  help = 'sum up efficiencies')
-parser.add_argument('--iBin'       , dest = 'binNumber'   , type=int,  default=-1, help='bin number (to refit individual bin)')
+parser.add_argument('--flag'       , type=str, default='', help = 'WP to test')
+parser.add_argument('--inputMC'    , type=str, default='', help = 'MC input file which contains 3d histograms')
+parser.add_argument('--inputData'  , type=str, default='', help = 'Data input file which contains 3d histograms')
+parser.add_argument('--inputBkg'   , type=str, default='', help = 'Background input file which contains 3d histograms')
+parser.add_argument('--era'        , type=str, default='', choices=["BtoF", "GtoH"], 
+                    help = 'Era to perform tnp fits for')
+parser.add_argument('--year'       , type=str, default='2016', choices=["2016", "2017", "2018"],
+                    help = 'Year of data taking')
+parser.add_argument('--createBins' , action='store_true' ,  help = 'Create binning definition')
+parser.add_argument('--checkBins'  , action='store_true' ,  help = 'Check binning definition')
+parser.add_argument('--createHists', action='store_true' ,  help = 'Create histograms')
+parser.add_argument('--doFit'      , action='store_true' ,  help = 'Fit sample')
+parser.add_argument('--sample'     , default='all'       ,  help = 'Create histograms (per sample, expert only)')
+parser.add_argument('--altSig'     , action='store_true' ,  help = 'Perform "alternate-signal" fit')
+parser.add_argument('--altBkg'     , action='store_true' ,  help = 'Perform "alternate-background" fit')
+parser.add_argument('--mcSig'      , action='store_true' ,  help = 'Fit MC sample')
+parser.add_argument('--mergeFiles' , action='store_true' ,  help = 'Merge files of individual fitted bins into one')
+parser.add_argument('--sumUp'      , action='store_true' ,  help = 'Produce the sum-up .txt file and plots')
 parser.add_argument('--outdir'     , type=str, default=None,
                     help="name of the output folder (if not passed, a default one is used, which has the time stamp in it)")
-parser.add_argument('--useTrackerMuons', action='store_true'  , help = 'Measuring efficiencies specific for tracker muons (different tunings needed')
-
+parser.add_argument('--iBin'       , dest = 'binNumber' , type=int,  default=-1, help='bin number (to refit individual bin)')
+parser.add_argument('--useTrackerMuons', action='store_true', help = 'Measuring efficiencies specific for tracker muons (different tunings needed)')
+parser.add_argument('--useVetoBins', action='store_true', help = 'Use veto bins for tracking and reco efficiencies')
 args = parser.parse_args()
 
-if args.flag is None:
-    print('[tnpEGM_fitter] flag is MANDATORY, this is the working point as defined in the settings.py')
+if args.flag=="":
+    print('[tnpEGM_fitter] flag argument is MANDATORY')
     sys.exit(0)
 
-## put most of the stuff here and make it configurable...
-## AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-## ===========================================================================
-
-
-massbins, massmin, massmax = 60, 60, 120
-
-binning_mass = [round(massmin + (massmax - massmin)/massbins*i, 1) for i in range(massbins+1) ]
-
-## define the binning here, much easier...
-binning_eta = [round(-2.4+0.1*i,2) for i in range(49) ]
-#binning_eta = [round(-2.4+0.4*i,2) for i in range(13) ]
-
-binning_pt  = [24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 55., 60., 65.]
-#binning_pt  = [24., 28., 32., 36., 40., 47., 55., 65.]
-
 typeflag = args.flag.split('_')[1]
-
-print("typeflag = ",typeflag)
-
-###########################################################
+print("typeflag = ", typeflag)
 
 
-if typeflag == 'tracking':
-    #binning_pt  = [15., 25.,35.,45.,55.,65.,80.]
-    #massbins, massmin, massmax = 100, 40, 140
-    #binning_pt  = [10., 15., 24., 35., 45., 55., 65.]  
-    binning_pt  = [24., 35., 45., 55., 65.]
-    #massbins, massmin, massmax = 100, 50, 150
-    massbins, massmin, massmax = 80, 50, 130
-    binningDef = {
-        'eta' : {'var' : 'eta', 'type': 'float', 'bins': binning_eta},
-        'pt'  : {'var' : 'pt' , 'type': 'float', 'bins': binning_pt }
-    }
+###############################################################################
+##### General configuration steps
+###############################################################################
 
-elif typeflag == 'reco':
-    #binning_pt   = [24., 65.]
-    #massbins, massmin, massmax = 52, 68, 120
-    massbins, massmin, massmax = 60, 60, 120
-    if args.useTrackerMuons:
-        binning_pt  = [24., 26., 30., 34., 38., 42., 46., 50., 55., 65.]
+## Binning
+binningDef_mass, binningDef = fitBinning(typeflag)
+massbins, massmin, massmax = binningDef_mass['nbins'], binningDef_mass['min'], binningDef_mass['max']
+
+if args.useVetoBins: 
+    if typeflag == "tracking":
+        binningDef["pt"]["bins"] = [10., 15.] + binningDef["pt"]["bins"] 
     else:
-        #binning_pt  = [10., 15., 20., 24., 26., 30., 34., 38., 42., 46., 50., 55., 60., 65.]
-        binning_pt  = [24., 26., 30., 34., 38., 42., 46., 50., 55., 60., 65.]
-    binningDef = {
-        'eta' : {'var' : 'eta', 'type': 'float', 'bins': binning_eta},
-        'pt'  : {'var' : 'pt' , 'type': 'float', 'bins': binning_pt }
-    }
+        binningDef["pt"]["bins"] = [10., 15., 20.] + binningDef["pt"]["bins"]
 
-elif typeflag == 'veto':
-    binning_pt  = [10., 15., 20., 24., 26., 28., 30., 32., 34., 36., 38., 40., 42., 44., 47., 50., 55., 60., 65.]
-    #binning_pt = [(15. + 5.*i) for i in range(11)]
-    binningDef = {
-        'eta' : {'var' : 'eta', 'type': 'float', 'bins': binning_eta},
-        'pt'  : {'var' : 'pt' , 'type': 'float', 'bins': binning_pt }
-    }
+if args.useTrackerMuons:
+    pass
 
-else:
-    binningDef = {
-        'eta' : {'var' : 'eta', 'type': 'float', 'bins': binning_eta},
-        'pt'  : {'var' : 'pt' , 'type': 'float', 'bins': binning_pt }
-    }
+binning_mass = [round(massmin + i*(massmax-massmin)/massbins, 1) for i in range(massbins+1)]
+binning_eta = binningDef["eta"]["bins"]
+binning_pt = binningDef["pt"]["bins"]
 
 
-
-########################
-
-
-if args.outdir:
-    baseOutDir = f'{args.outdir}/efficiencies_{args.era}/'
-else:
-    baseOutDir = f'plots/results_{datetime.date.isoformat(datetime.date.today())}/efficiencies_{args.era}/'
-
-outputDirectory = f'{baseOutDir}/{args.flag}'
-
+## Output directory
+outputDirectory = args.outdir if args.outdir else f"plots/results_{datetime.date.isoformat(datetime.date.today())}/"
+outputDirectory += f"efficiencies_{args.era}/{args.flag}/"
 print('===>  Output directory: ', outputDirectory)
 print()
 
-luminosity = 16.8 if args.era == "GtoH" else 19.5
-eraMC = "postVFP" if args.era == "GtoH" else "preVFP"
-dataName = f"mu_Run{args.era}"
+## Names and sample definitions
+if args.year == "2016":
+    luminosity = 16.8 if args.era == "GtoH" else 19.5
+    eraMC = "postVFP" if args.era == "GtoH" else "preVFP"
+    dataName = f"mu_Run{args.era}"
+else:
+    luminosity = 59.8 if args.year=="2018" else 38.0  # 2017 is not used
+    eraMC = args.year
+    dataName = f"mu_{args.year}"
 mcName = f"mu_DY_{eraMC}"
 bkg_name = f"mu_mcBkg_{eraMC}"
 
@@ -156,101 +126,28 @@ samples_data = tnpSample(dataName, args.inputData, f"{outputDirectory}/{dataName
 samples_dy   = tnpSample(mcName,   args.inputMC,   f"{outputDirectory}/{mcName}_{args.flag}.root",   True)
 samples_bkg  = tnpSample(bkg_name, args.inputBkg,  f"{outputDirectory}/{bkg_name}_{args.flag}.root", True)
 
-
-## check binning in histogram and consistency with settings above
-## FIXME: should be done for each step, but histograms are not always passed
-if args.createHists:
-    ftest = ROOT.TFile(args.inputData, "READ")
-    htest = ftest.Get(f"pass_{dataName}")
-    this_binning_mass = [round(htest.GetXaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsX()+2) ]
-    resTestMass = testBinning(binning_mass, this_binning_mass, "mass", typeflag, allowRebin=True)
-    this_binning_pt = [round(htest.GetYaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsY()+2) ]
-    resTestPt = testBinning(binning_pt, this_binning_pt, "pt", typeflag, allowRebin=True)
-    this_binning_eta = [round(htest.GetZaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsZ()+2) ]
-    resTestEta = testBinning(binning_eta, this_binning_eta, "eta", typeflag, allowRebin=True)
-    ftest.Close()
-    if resTestMass or resTestPt or resTestEta:
-        exit(-1)
-
-
-####################################################################
-##### Create (check) Bins
-####################################################################
-if args.checkBins:
-    print(">>> Check bins")
-    tnpBins = tnpBiner.createBins(binningDef, None)
-    for ib in range(len(tnpBins['bins'])):
-        print(tnpBins['bins'][ib]['name'])
-        print('  - cut: ',tnpBins['bins'][ib]['cut'])
-    sys.exit(0)
-
-if args.createBins:
-    print(">>> Create bins")
-    if os.path.exists( outputDirectory ):
-        shutil.rmtree( outputDirectory )
-    createPlotDirAndCopyPhp(outputDirectory)
-    tnpBins = tnpBiner.createBins(binningDef, None)
-    pickle.dump( tnpBins, open( f'{outputDirectory}/bining.pkl', 'wb') )
-    print(f'Created dir: {outputDirectory} ')
-    print(f'Bining created successfully... ')
-    print(f'Note than any additional call to createBins will overwrite directory {outputDirectory}')
-    sys.exit(0)
-
-with open(f'{outputDirectory}/bining.pkl', 'rb') as f:
-    tnpBins = pickle.load(f)
-
-
-####################################################################
-##### Create Histograms
-####################################################################
-
 samplesDef = {
     'data'   : samples_data,
     'mcNom'  : samples_dy,
     'mcAltSig' : None,
-    'mcBkg'  : samples_bkg if typeflag in ["reco", "tracking"] else None,  #FIXME: it should be written better
+    'mcBkg'  : samples_bkg if fitStrategies[typeflag]['AltBkg'] else None
     #'tagSel' : None,
 }
 
-if args.createHists:
-    print()
-    print(">>> Create histograms")
-    def parallel_hists(sampleType):
-        sample = samplesDef[sampleType]
-        if sample is not None and (sampleType == args.sample or args.sample == 'all'):
-            print('Creating histogram for sample', sample.getName())
-            sample.printConfig()
-            if typeflag == 'tracking':
-                var = { 'namePassing' : 'pair_mass', 'nameFailing' : 'pair_massStandalone', 'nbins' : massbins, 'min' : massmin, 'max': massmax }
-            else:
-                var = { 'name' : 'pair_mass', 'nbins' : massbins, 'min' : massmin, 'max': massmax }
-            tnpRoot.makePassFailHistograms(sample, tnpBins['bins'], binningDef, var)
-
-    pool = Pool()
-    pool.map(parallel_hists, samplesDef.keys())
-    sys.exit(0)
-
-
-####################################################################
-##### Actual Fitter
-####################################################################
-
-
-sampleMC = samplesDef['mcNom']
-if sampleMC is None:
+if samplesDef['mcNom'] is None:
     print('[tnpEGM_fitter, prelim checks]: MC sample not available... check your settings')
     sys.exit(1)
 
 for sample in samplesDef.values():
     if sample is None:
         continue
-    setattr( sample, 'mcRef'     , sampleMC )
-    setattr( sample, 'bkgRef'    , samplesDef['mcBkg'] ) if typeflag in ["reco", "tracking"] else None
-    setattr( sample, 'nominalFit', '%s/%s_nominalFit.root' % ( outputDirectory , sample.getName()) )
-    setattr( sample, 'altSigFit' , '%s/%s_altSigFit.root'  % ( outputDirectory , sample.getName()) )
-    setattr( sample, 'altBkgFit' , '%s/%s_altBkgFit.root'  % ( outputDirectory , sample.getName()) )
+    setattr(sample, 'mcRef'     , samplesDef['mcNom'] )
+    setattr(sample, 'bkgRef'    , samplesDef['mcBkg'] if fitStrategies[typeflag]['AltBkg'] else None)
+    setattr(sample, 'nominalFit', '%s/%s_nominalFit.root' % (outputDirectory, sample.getName()) )
+    setattr(sample, 'altSigFit' , '%s/%s_altSigFit.root'  % (outputDirectory, sample.getName()))
+    setattr(sample, 'altBkgFit' , '%s/%s_altBkgFit.root'  % (outputDirectory, sample.getName()))
 
-sampleToFit = samplesDef['data'] if not args.mcSig else sampleMC
+sampleToFit = samplesDef['data'] if not args.mcSig else samplesDef['mcNom']
 
 if sampleToFit is None:
     print('[tnpEGM_fitter, prelim checks]: data sample not available... check your settings')
@@ -266,20 +163,95 @@ else:
     fileName = sampleToFit.nominalFit
     fitType  = 'nominalFit'
 
+
+###############################################################################
+##### Create (check) Bins
+###############################################################################
+if args.checkBins:
+    print()
+    print(">>> Check bins")
+    tnpBins = createBins(binningDef, None)
+    for ib in range(len(tnpBins['bins'])):
+        print(tnpBins['bins'][ib]['name'])
+        print('  - cut: ', tnpBins['bins'][ib]['cut'])
+        print('')
+    sys.exit(0)
+
+## Check if the binning is consistent with the one in the histograms
+if args.createHists:
+    print()
+    print(">>> Check bin consistency with histograms")
+    ftest = ROOT.TFile(args.inputData, "READ")
+    htest = ftest.Get(f"pass_{dataName}")
+    this_binning_mass = [round(htest.GetXaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsX()+2) ]
+    resTestMass = testBinning(binning_mass, this_binning_mass, "mass", typeflag, allowRebin=True)
+    this_binning_pt = [round(htest.GetYaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsY()+2) ]
+    resTestPt = testBinning(binning_pt, this_binning_pt, "pt", typeflag, allowRebin=True)
+    this_binning_eta = [round(htest.GetZaxis().GetBinLowEdge(i), 1) for i in range(1, htest.GetNbinsZ()+2) ]
+    resTestEta = testBinning(binning_eta, this_binning_eta, "eta", typeflag, allowRebin=True)
+    ftest.Close()
+    if any(res<0 for  res in [resTestMass, resTestPt, resTestEta]):
+        sys.exit(0)
+
+if args.createBins:
+    print(">>> Create bins")
+    if os.path.exists( outputDirectory ):
+        shutil.rmtree( outputDirectory )
+    createPlotDirAndCopyPhp(outputDirectory)
+    tnpBins = createBins(binningDef, None)
+    pickle.dump(tnpBins, open(f'{outputDirectory}/bining.pkl', 'wb') )
+    print(f'Created dir: {outputDirectory} ')
+    print(f'Bining created successfully... ')
+    print(f'Note than any additional call to "createBins" will overwrite directory {outputDirectory}')
+    sys.exit(0)
+
+with open(f'{outputDirectory}/bining.pkl', 'rb') as f:
+    tnpBins = pickle.load(f)
+
+
+###############################################################################
+##### Create Histograms
+###############################################################################
+if args.createHists:
+    print()
+    print(">>> Create histograms")
+    def parallel_hists(sampleType):
+        sample = samplesDef[sampleType]
+        if sample is not None and (sampleType==args.sample or args.sample=='all'):
+            print('Creating histogram for sample', sample.getName())
+            sample.printConfig()
+            if typeflag == 'tracking':
+                var = { 'namePassing' : 'pair_mass', 'nameFailing' : 'pair_massStandalone', 'nbins' : massbins, 'min' : massmin, 'max': massmax }
+            else:
+                var = { 'name' : 'pair_mass', 'nbins' : massbins, 'min' : massmin, 'max': massmax }
+            makePassFailHistograms(sample, tnpBins['bins'], binningDef, var)
+
+    pool = Pool()
+    pool.map(parallel_hists, samplesDef.keys())
+    sys.exit(0)
+
+
+####################################################################
+##### Actual Fitter
+####################################################################
+
+## Create plot directory
 plottingDir = f"{outputDirectory}/plots/{sampleToFit.getName()}/{fitType}"
 createPlotDirAndCopyPhp(plottingDir)
 
-
+## Load the shapes and parameters
 ps = fitParsAndShapes(typeflag)
 
-# general fit settings
-symmConvSigFail = False if typeflag in ["tracking", "reco", "veto"] else False # use Gaussian as resolution function for altSig model
-modelFSR = True if typeflag in ["iso", "trigger", "isonotrig"] else False # add Gaussian to model low mass bump from FSR, in altSig fit
-useBBFail = False 
+## General fit settings
+symmConvSigFail = False  # use Gaussian as resolution function for altSig model
+modelFSR = True if typeflag in ["iso", "trigger", "isonotrig"] else False # add Gaussian to model low mass bump from FSR (for fits with analytic signal model)
+useBBFail = True  # use Barlow-Beeston method for the bkg template
+doPrefit = "sig-both"  # do prefit on sig/bkg, when it is analytic
+constrainMode = ""  # constrain the parameters of the analytic model to the prefit values (see "_applyPrefitOnPar" in the fitterHandler class for details)
 
-fitterNominal = getattr(fitUtils, fitStrategies[typeflag]['Nominal'])
-fitterAltSig  = getattr(fitUtils, fitStrategies[typeflag]['AltSig'])
-fitterAltBkg  = getattr(fitUtils, fitStrategies[typeflag]['AltBkg']) if fitStrategies[typeflag]['AltBkg'] else None
+fitterNominal = getattr(tnpFit, fitStrategies[typeflag]['Nominal'])
+fitterAltSig  = getattr(tnpFit, fitStrategies[typeflag]['AltSig'])
+fitterAltBkg  = getattr(tnpFit, fitStrategies[typeflag]['AltBkg']) if fitStrategies[typeflag]['AltBkg'] else None
 
 if fitterNominal is None:
     sys.exit("[tnpEGM_fitter]: No fitting strategy defined for nominal fit")
@@ -287,36 +259,43 @@ if fitterNominal is None:
 if fitterAltSig is None and fitterAltBkg is None:
     sys.exit("[tnpEGM_fitter]: No fitting strategy defined for alternative fit")
 
-
 if args.doFit:
     print()
     print(">>> Running fits")
 
-    def parallel_fit(ib): ## parallel
-        #print("tnpBins['bins'][ib] = ",tnpBins['bins'][ib])
+    def parallel_fit(ib):
+        
         if not ((args.binNumber>=0 and ib==args.binNumber) or (args.binNumber<0)): return
             
         if not (args.altSig or args.altBkg):
             fitterNominal(sampleToFit, tnpBins['bins'][ib], typeflag, "Nominal", massbins, massmin, massmax,
-                          ps[f"tnpParNominal"], ps[f"tnpShapesNominal"], ps[f"parConstraints"])
+                          ps[f"tnpParNominal"], ps[f"tnpShapesNominal"], ps[f"parConstraints"],
+                          isMC=args.mcSig, useBBFail=useBBFail,
+                          modelFSR=modelFSR, symmConvSigFail=symmConvSigFail,
+                          doPrefit=doPrefit, constrainMode=constrainMode)
         
         elif args.altSig and fitterAltSig:
-            key_pars_altSig = f"tnpParAltSig_trackingHighPt" if (fitUtils.ptMin(tnpBins['bins'][ib])>54.0 and typeflag=="tracking") \
+            key_pars_altSig = f"tnpParAltSig_trackingHighPt" if binMinPt(tnpBins['bins'][ib])>54.0 and typeflag=="tracking" \
                               else f"tnpParAltSig" # force peak mean more on the right for high pt bins and tracking efficiency
             fitterAltSig(sampleToFit, tnpBins['bins'][ib], typeflag, "AltSig", massbins, massmin, massmax,
                          ps[key_pars_altSig], ps[f"tnpShapesAltSig"], ps[f"parConstraints"], 
-                         modelFSR=modelFSR, symmConvSigFail=symmConvSigFail, useBBFail=False, isMC=args.mcSig, doPrefit="sig-both", constrainMode="")
+                         isMC=args.mcSig, useBBFail=useBBFail, 
+                         modelFSR=modelFSR, symmConvSigFail=symmConvSigFail,
+                         doPrefit=doPrefit, constrainMode=constrainMode)
         
-        elif args.altBkg and (args.mcSig is False) and fitterAltBkg:
+        elif args.altBkg and fitterAltBkg:
             fitterAltBkg(sampleToFit, tnpBins['bins'][ib], typeflag, "AltBkg", massbins, massmin, massmax,
-                         ps[f"tnpParAltBkg"], ps[f"tnpShapesAltBkg"], ps["parConstraints"])
+                         ps[f"tnpParAltBkg"], ps[f"tnpShapesAltBkg"], ps["parConstraints"],
+                         isMC=args.mcSig, useBBFail=useBBFail,
+                         modelFSR=modelFSR, symmConvSigFail=symmConvSigFail,
+                         doPrefit=doPrefit, constrainMode=constrainMode)
         
         else:
-            # This is the case for fitting on MC with altSig/altBkg models. Not used for now
-            pass
+            print(f"[tnpEGM_fitter]: No fitting strategy defined for alternative fit")
+            return
     
     # parallel_fit(0)
-    
+
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
     args.mergeFiles = True
@@ -396,9 +375,9 @@ if args.sumUp:
             
 
     def parallel_sumUp(_bin):
-        effis = tnpRoot.getAllEffi(info, _bin, outputDirectory, saveCanvas=True)
-        v1Range = _bin['title'].split(';')[1].split('<')
-        v2Range = _bin['title'].split(';')[2].split('<')
+        effis = getAllEffi(info, _bin, outputDirectory, saveCanvas=True)
+        v1Range = _bin['title'].split(';')[0].split('<')
+        v2Range = _bin['title'].split(';')[1].split('<')
 
         ib = int(_bin['name'].split('_')[0].replace('bin',''))
 
