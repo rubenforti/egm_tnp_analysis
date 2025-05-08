@@ -4,18 +4,11 @@ import ROOT
 import os
 import re
 import sys
-from plotUtils import safeOpenFile, safeGetObject
+from .binUtils import binMinPt
+from .rootUtils import safeOpenFile, safeGetObject
 from copy import copy
 
 from config.fit_settings import fitParsAndShapes
-
-def ptMin( tnpBin ):
-    ptmin = 1
-    if tnpBin['name'].find('pt_') >= 0:
-        ptmin = float(tnpBin['name'].split('pt_')[1].split('p')[0])
-    elif tnpBin['name'].find('et_') >= 0:
-        ptmin = float(tnpBin['name'].split('et_')[1].split('p')[0])
-    return ptmin
 
 
 class fitterHandler():
@@ -91,6 +84,12 @@ class fitterHandler():
 
     def _applyPrefitOnPar(self, flag, parName, parObj, constrainMode=""):
         """
+        Method that applies the postfit value of the fit on pure MC on the
+        parameters for the fit on data, by modifying its central value. Other
+        constraints can be applied with the "constrainMode" argument:
+          - "gauss" : a Gaussian constraint on the parameter is applied
+          - "legacy": the parameter is allowed to vary in a range of 3 sigma
+          - "fix"   : the parameter is fixed to the prefit value
         """
         self.parameters.remove(parName)
         pName = parName.split("[")[0]
@@ -132,6 +131,10 @@ class fitterHandler():
 
     def doPrefitSigOnMC(self, opts):
         """
+        Method that uses the fit on a control MC sample to modify the 
+        parameters of the fit on data. The instructions are passed with the 
+        keyword argument "--doPrefit=sample-flag", where sample={sig,bkg} and
+        flag={pass,fail,both}.
         """
         if not opts.get("doPrefit", None):
             print("Error: doPrefit option not set.")
@@ -155,7 +158,7 @@ class fitterHandler():
             listOfParam = copy([tnpPar for tnpPar in self.parameters if flag[0] in tnpPar])
             for par in fitres.floatParsFinal():
                 for parNameExtended in listOfParam:
-                    x = re.compile('%s\[.*?' % par.GetName())
+                    x = re.compile('%s\\[.*?' % par.GetName())
                     if x.match(parNameExtended):
                         self._applyPrefitOnPar(flag, parNameExtended, par, constrainMode)
                         
@@ -190,9 +193,9 @@ class fitterHandler():
         """
         Sets the DY templates in the tnpFitter class by searching in the
         apposite file.
-        The parameter useAllProbesForFail is a further control over the failing
-        probes template:
-          - useAllProbesForFail=0: default template (only failing probes) 
+        The keyword argument "useAllProbesForFail" is a further control over
+        the failing probes template:
+          - useAllProbesForFail==0: default template (only failing probes) 
           - otherwise: add to the default template the passing probes template
                        (using standalone variables), if useAllProbesForFail is
                        negative or the integral of failing probes is smaller
@@ -295,7 +298,7 @@ def histFitterAnalyticSig(sample, tnpBin, typeflag, strategy_name,
 
     fitter = fitterHandler(sample, tnpBin, typeflag, strategy_name, massbins, massmin, massmax)
 
-    if ptMin(tnpBin) >= 35:
+    if binMinPt(tnpBin) >= 35:
         tnpWorkspaceParam = [x for x in tnpWorkspaceParam if x!="tailLeft[1]"]
     else:
         tnpWorkspaceParam = [x for x in tnpWorkspaceParam if x!="tailLeft[-1]"]
@@ -347,7 +350,7 @@ def histFitterAllAnalytic(sample, tnpBin, typeflag, strategy_name,
 
     fitter = fitterHandler(sample, tnpBin, typeflag, strategy_name, massbins, massmin, massmax)
 
-    if ptMin(tnpBin) >= 35:
+    if binMinPt(tnpBin) >= 35:
         tnpWorkspaceParam = [x for x in tnpWorkspaceParam if x!="tailLeft[1]"]
     else:
         tnpWorkspaceParam = [x for x in tnpWorkspaceParam if x!="tailLeft[-1]"]

@@ -1,33 +1,23 @@
 #!/usr/bin/env python3
 
 import os
-import copy
+import sys
 import shutil
 from array import array
-import numpy as np
-import re
-import math
+import ROOT
+from libPython.CMS_lumi_new import *
+from libPython.rootUtils import addStringToEnd
 
 ## safe batch mode
-import sys
 args = sys.argv[:]
 sys.argv = ['-b']
-import ROOT
 sys.argv = args
 ROOT.gROOT.SetBatch(True)
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
-from libPython.CMS_lumi_new import *
 
 def printLine(marker='-', repeat=30):
     print(marker*repeat)
-
-    
-def addStringToEnd(name, matchToAdd, notAddIfEndswithMatch=False):
-    if notAddIfEndswithMatch and name.endswith(matchToAdd):
-        return name
-    elif not name.endswith(matchToAdd):
-        return name + matchToAdd
 
 
 def createPlotDirAndCopyPhp(outdir):
@@ -35,81 +25,6 @@ def createPlotDirAndCopyPhp(outdir):
         os.makedirs(outdir)
     htmlpath = "etc/inputs/index.php"
     shutil.copy(htmlpath, outdir)
-
-
-def compileMacro(x): #, basedir=os.environ['PWD']):
-    #ROOT.gROOT.ProcessLine(".L %s/%s+" % (os.environ['CMSSW_BASE'],x));
-    success = ROOT.gSystem.CompileMacro("%s" % (x), "k")
-    if not success:
-        print("Loading and compiling %s failed! Exit" % x)
-        quit()
-
-def compileFileMerger(x):
-    y=x.strip(".C")
-    print(f"Compiling {x} into {y}")
-    res = os.system(f"g++ `root-config --libs --cflags --glibs` -O3 {x} -o {y}")
-    if res:
-        print("Compiling %s failed! Exit" % x)
-        quit()
-
-
-def testBinning(bins, testbins, var="var", flag="workingPoint", allowRebin=False):
-    """
-    """
-    if bins!=testbins:
-        if bins[0] in testbins:
-            firstTestIdx = testbins.index(bins[0])
-            if all(bins[i]==testbins[i+firstTestIdx] for i in range(len(bins))):
-                print(f"\nWarning: {var} binning not consistent with the one in histograms for {flag}")
-                print(f"{bins}")
-                print(f"{testbins}")
-                print(f"However it seems to be a slice of it, so I will continue assuming it is intentional. Proceed with caution!\n\n")
-                return 0
-            elif allowRebin and all(bins[i] in testbins for i in range(len(bins))):
-                print(f"\nWarning: {var} binning not consistent with the one in histograms for {flag}")
-                print(f"{bins}")
-                print(f"{testbins}")
-                print(f"However it seems to be a subset of it, so I will continue assuming you wanted to rebin. Proceed with caution!\n\n")
-                return 0
-        print(f"\nError: {var} binning not consistent with the one in histograms for {flag}")
-        print(f"{bins}")
-        print(f"{testbins}")
-        print("Please check!\n\n")
-        return -1
-    else:
-        return 0
-    
-def safeGetObject(fileObject, objectName, quitOnFail=True, silent=False, detach=True):
-    obj = fileObject.Get(objectName)
-    if obj == None:
-        if not silent:
-            print(f"Error getting {objectName} from file {fileObject.GetName()}")
-        if quitOnFail:
-            quit()
-        return None
-    else:
-        if detach:
-            obj.SetDirectory(0)
-        return obj
-
-def safeOpenFile(fileName, quitOnFail=True, silent=False, mode="READ"):
-    fileObject = ROOT.TFile.Open(fileName, mode)
-    if not fileObject or fileObject.IsZombie():
-        if not silent:
-            print(f"Error when opening file {fileName}")
-        if quitOnFail:
-            quit()
-        else:
-            return None
-    elif not fileObject.IsOpen():
-        if not silent:
-            print(f"File {fileName} was not opened")
-        if quitOnFail:
-            quit()
-        else:
-            return None
-    else:
-        return fileObject
 
 
 def adjustSettings_CMS_lumi():

@@ -3,24 +3,23 @@
 ## example
 # python libPython/checkFitStatus.py plots/results_test_globalMuons_byCharge_noMinos_RooMinimizerMinuit2//efficiencies_GtoH/mu_iso_plus/mu_RunGtoH_mu_iso_plus.nominalFit.root
 
-import os
-import pickle
-import shutil
+import os, sys
 import copy
 import argparse
+import ROOT
 
 ## safe batch mode
-import sys
 args = sys.argv[:]
 sys.argv = ['-b']
-import ROOT
 sys.argv = args
 ROOT.gROOT.SetBatch(True)
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
-#from libPython.plotUtils import safeGetObject, safeOpenFile, createPlotDirAndCopyPhp, drawTH2
+from libPython.rootUtils import safeGetObject, safeOpenFile
+from libPython.plotUtils import createPlotDirAndCopyPhp, drawTH2
+
 sys.path.append(os.getcwd() + "/libPython/")
-from plotUtils import *
+
 
 def checkFit(infile, outdir, fitName, hbins):
 
