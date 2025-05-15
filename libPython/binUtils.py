@@ -9,15 +9,15 @@ import copy
 
 ## LETSGOSKI
 
-def createBins(bining, cut=None):
+def createBins(binning, cut=None):
 
     nbin = 1
-    index = [-1 for i in bining.keys()]
+    index = [-1 for i in binning.keys()]
     listOfIndex = []    
     listOfIndex.append( index )
     print('this is listOfIndex', listOfIndex)
     ### first map nD bins in a single list
-    for iiv, (var, bin_dict) in enumerate(bining.items()):
+    for iiv, (var, bin_dict) in enumerate(binning.items()):
         print(iiv, var, bin_dict)
         if not any([x in list(bin_dict.keys()) for x in ["type", "bins"]]):
             print(f'Bining is not complete for var {var}')
@@ -54,7 +54,7 @@ def createBins(bining, cut=None):
         binCut   = f"{cut} && " if cut is not None else ""
         binVars  = {}
 
-        for iv, (var, bin_dict) in enumerate(bining.items()):
+        for iv, (var, bin_dict) in enumerate(binning.items()):
             varType, bins1D = bin_dict['type'], bin_dict['bins']
             lowEdge, highEdge = bins1D[ix[iv]], bins1D[ix[iv]+1]
 
@@ -81,7 +81,7 @@ def createBins(bining, cut=None):
         listOfBins.append({'cut' : binCut, 'title': binTitle, 'name' : binName, 'vars' : binVars })
         
     binDefinition = {
-        'vars' : list(bining.keys()),
+        'vars' : list(binning.keys()),
         'bins' : listOfBins
     }
 

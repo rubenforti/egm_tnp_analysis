@@ -91,25 +91,18 @@ def computeEffi(n1, n2, e1, e2):
     return effout
 
 
-def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
-    # FIXME: this function often leads to crashes,
-    #        probably because of reading canvases but it is not clear
-    effis = {}
-    effis_canvas = {}
-    binName = bindef["name"]
-    canvasesToGet = ["MC_Nominal_fit", "Data_Nominal", "Data_Alt_Sig", "Data_Alt_Bkg"] 
-    #canvasesToGet = ["dataNominal", "dataAltSig", "dataAltBkg", "mcNominal"]
-    for key, value in info.items():
-        effis[key], effis_canvas[f"canv_{key}"] = [-1, -1], None        
-        if value is None or not os.path.isfile(value):
-            canvasesToGet = [c for c in canvasesToGet if c!=key]
-            continue
+def getAllEffi(info, bindef):
 
+    effis = {}
+    binName = bindef["name"]
+    for key, value in info.items():
+        effis[key] = [-1, -1]       
+
+        if not value or not os.path.isfile(value):
+            continue
+        
         rootfile = safeOpenFile(value, mode="READ")
 
-        if key in canvasesToGet and saveCanvas:
-            effis_canvas[f"canv_{key}"] = safeGetObject(rootfile, f"{binName}_Canv", detach=False)
-        
         if key == "MC_Nominal":
             hP = safeGetObject(rootfile, f"{binName}_Pass", detach=False)
             hF = safeGetObject(rootfile, f"{binName}_Fail", detach=False)
@@ -121,18 +114,34 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
         else:
             fitresP = safeGetObject(rootfile, f"{binName}_resP", detach=False)
             fitresF = safeGetObject(rootfile, f"{binName}_resF", detach=False)
-            
+
             fitP, fitF = fitresP.floatParsFinal().find("nSigP"), fitresF.floatParsFinal().find("nSigF")
             nP, nF = fitP.getVal(), fitF.getVal()
             eP, eF = fitP.getError(), fitF.getError()
             if "Data" in key:
                 eP, eF = max(math.sqrt(nP), eP), max(math.sqrt(nF), eF)
         
-        effis[key] = computeEffi(nP, nF, eP, eF) + [nP, nF, eP, eF]
+        effis[key] = computeEffi(nP, nF, eP, eF) + [nP, eP, nF, eF]
         rootfile.Close()
 
-    if not saveCanvas:
-        return effis
+    return effis
+
+def plotAllEffi(info, bindef, outputDirectory, effis):
+    effis_canvas = {}
+    binName = bindef["name"]
+    canvasesToGet = ["MC_Nominal_fit", "Data_Nominal", "Data_Alt_Sig", "Data_Alt_Bkg"] 
+    
+    for key, value in info.items():
+        if not (value and os.path.isfile(value)):
+            if key in canvasesToGet:
+                print(f"Warning: {key} fit not found, skipping...")
+                canvasesToGet.remove(key)
+            continue
+
+        rootfile = safeOpenFile(value, mode="READ")
+        effis_canvas[f"canv_{key}"] = safeGetObject(rootfile, f"{binName}_Canv", detach=False) if key in canvasesToGet else None
+        rootfile.Close()
+
 
     ncols = len(canvasesToGet)
 
@@ -144,16 +153,16 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
     pad_eff = ROOT.TPad('efficiency', 'efficiency', 0.0, 0.0, 1.0, 0.15)
 
     pad_title.Draw()
-    pad_pass.Divide(ncols,1), pad_pass.Draw()
-    pad_fail.Divide(ncols,1), pad_fail.Draw()
-    pad_eff.Divide(ncols,1), pad_eff.Draw()
+    pad_pass.Divide(ncols, 1), pad_pass.Draw()
+    pad_fail.Divide(ncols, 1), pad_fail.Draw()
+    pad_eff.Divide(ncols, 1),  pad_eff.Draw()
 
     pad_title.cd()
     txt = ROOT.TLatex()
-    txt.SetTextFont(62)
+    txt.SetTextFont(42)
     txt.SetTextSize(0.5)
     txt.SetNDC()
-    txt.DrawLatex(0.1, 0.5, f'{bindef['name'].replace('_',' ').replace('To', '-').replace('probe ', '').replace('m','-').replace('pt','XX').replace('p','.').replace('XX','p_{T}')}')
+    txt.DrawLatex(0.4, 0.5, f'{bindef['name'].replace('_','  ').replace('To', ' - ').replace('probe ', '').replace('m',' - ').replace('pt','XX').replace('p','.').replace('XX','p_{T}')}')
     txt.SetTextSize(0.15)
 
     for icol, canv_type in enumerate(canvasesToGet):
@@ -170,18 +179,16 @@ def getAllEffi(info, bindef, outputDirectory, saveCanvas=False):
         txt.DrawLatex(0.10, 0.77, canv_type.replace('_', " ") + " :" if not "MC_Nominal" in canv_type else "MC counting :")
         txt.SetTextFont(42)
         tmp = effis[canv_type]
-        txt.DrawLatex(0.20, 0.59, f'Passing: {tmp[2]:.1f} #pm {tmp[4]:.1f}')
-        txt.DrawLatex(0.20, 0.41, f'Failing: {tmp[3]:.1f} #pm {tmp[5]:.1f}')
+        txt.DrawLatex(0.20, 0.59, f'Passing: {tmp[2]:.1f} #pm {tmp[3]:.1f}')
+        txt.DrawLatex(0.20, 0.41, f'Failing: {tmp[4]:.1f} #pm {tmp[5]:.1f}')
         txt.SetTextFont(62)
         txt.DrawLatex(0.20, 0.23, f'Efficiency: {tmp[0]*100.:.2f} #pm {tmp[1]*100.:.2f} %')
         txt.SetTextFont(42)
 
     canv_all.cd()
     canv_all.Update()
-    canv_all.SaveAs(outputDirectory+'/plots/{n}_all.pdf'.format(n=bindef['name']))
-    canv_all.SaveAs(outputDirectory+'/plots/{n}_all.png'.format(n=bindef['name']))
-
-    return effis
+    canv_all.SaveAs(f"{outputDirectory}/{bindef['name']}_all.pdf")
+    canv_all.SaveAs(f"{outputDirectory}/{bindef['name']}_all.png")
 
 
 def getAllScales( info, bindef, refReplica ):
