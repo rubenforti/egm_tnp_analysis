@@ -24,13 +24,14 @@ def runCommands(wp, era, options, inputMC, inputData, inputBkg):
     cmds.append(['python', ex, opt_e, opt_f, '--createBins'])
     cmds.append([el for el in ['python', ex, opt_e, opt_f, opt_iMC , opt_iData, opt_iBkg, '--createHists'] if el!=""])
     cmds.append(['python', ex, opt_e, opt_f, '--doFit'                       ])
+    
     cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig'            ])
     cmds.append(['python', ex, opt_e, opt_f, '--doFit', '--mcSig', '--altSig'])
     cmds.append(['python', ex, opt_e, opt_f, '--doFit',            '--altSig'])
     cmds.append(['python', ex, opt_e, opt_f, '--doFit',            '--altBkg'])
     
     cmds.append(['python', ex, opt_e, opt_f, '--sumUp'                        ])
-
+    
 
     for cmd in cmds:
         if args.onlySumUp and "--sumUp" not in cmd:

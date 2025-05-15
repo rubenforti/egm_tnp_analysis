@@ -21,12 +21,13 @@ ROOT.gInterpreter.ProcessLine(".O3")
 
 
 ## TnP libraries and functions
-import libPython.fitUtils  as tnpFit
+import libPython.fitUtils as tnpFit
+import libPython.MuonWmass_scaleFactors as makesf
 from libPython.binUtils import createBins, testBinning, binMinPt
 from libPython.checkFitStatus import checkFit
 from libPython.histUtils import makePassFailHistograms
 from libPython.plotUtils import createPlotDirAndCopyPhp
-from libPython.rootUtils import compileMacro, safeGetObject, safeOpenFile, getAllEffi
+from libPython.rootUtils import compileMacro, safeGetObject, safeOpenFile, getAllEffi, plotAllEffi
 from libPython.tnpClassUtils import tnpSample
 
 
@@ -34,10 +35,10 @@ from libPython.tnpClassUtils import tnpSample
 from config.fit_settings import fitBinning, fitParsAndShapes
 from config.fitting_strategies import fitStrategies
 
+## Compile C++ libraries
 compileMacro("libCpp/RooCBExGaussShape.cc")
 compileMacro("libCpp/RooCMSShape.cc")
 compileMacro("libCpp/histFitter.C")
-#compileFileMerger("libCpp/FileMerger.C")
 compileMacro("libCpp/FileMerger.C")
 
 #################################################
@@ -141,11 +142,11 @@ if samplesDef['mcNom'] is None:
 for sample in samplesDef.values():
     if sample is None:
         continue
-    setattr(sample, 'mcRef'     , samplesDef['mcNom'] )
-    setattr(sample, 'bkgRef'    , samplesDef['mcBkg'] if fitStrategies[typeflag]['AltBkg'] else None)
-    setattr(sample, 'nominalFit', '%s/%s_nominalFit.root' % (outputDirectory, sample.getName()) )
-    setattr(sample, 'altSigFit' , '%s/%s_altSigFit.root'  % (outputDirectory, sample.getName()))
-    setattr(sample, 'altBkgFit' , '%s/%s_altBkgFit.root'  % (outputDirectory, sample.getName()))
+    setattr(sample, 'mcRef',  samplesDef['mcNom'] )
+    setattr(sample, 'bkgRef', samplesDef['mcBkg'] if fitStrategies[typeflag]['AltBkg'] else None)
+    setattr(sample, 'nominalFit', f"{outputDirectory}/{sample.getName()}_nominalFit.root")
+    setattr(sample, 'altSigFit',  f"{outputDirectory}/{sample.getName()}_altSigFit.root")
+    setattr(sample, 'altBkgFit',  f"{outputDirectory}/{sample.getName()}_altBkgFit.root")
 
 sampleToFit = samplesDef['data'] if not args.mcSig else samplesDef['mcNom']
 
@@ -199,13 +200,13 @@ if args.createBins:
         shutil.rmtree( outputDirectory )
     createPlotDirAndCopyPhp(outputDirectory)
     tnpBins = createBins(binningDef, None)
-    pickle.dump(tnpBins, open(f'{outputDirectory}/bining.pkl', 'wb') )
+    pickle.dump(tnpBins, open(f'{outputDirectory}/binning.pkl', 'wb') )
     print(f'Created dir: {outputDirectory} ')
     print(f'Bining created successfully... ')
     print(f'Note than any additional call to "createBins" will overwrite directory {outputDirectory}')
     sys.exit(0)
 
-with open(f'{outputDirectory}/bining.pkl', 'rb') as f:
+with open(f'{outputDirectory}/binning.pkl', 'rb') as f:
     tnpBins = pickle.load(f)
 
 
@@ -294,12 +295,12 @@ if args.doFit:
             print(f"[tnpEGM_fitter]: No fitting strategy defined for alternative fit")
             return
     
-    # parallel_fit(0)
-
+    #parallel_fit(166)
+    
     pool = Pool() ## parallel
     pool.map(parallel_fit, range(len(tnpBins['bins']))) ## parallel
     args.mergeFiles = True
-
+    
 
 ####################################################################
 ##### Merging the files with the results into a single one
@@ -348,7 +349,8 @@ if args.mergeFiles:
 ##### Producing the sumUp .txt files and plots
 ####################################################################
 if args.sumUp:
-    from pprint import pprint
+    print()
+    print(">>> Summing up...")
 
     info = {
         'Data_Nominal'  : sampleToFit.nominalFit,
@@ -356,42 +358,41 @@ if args.sumUp:
         'Data_Alt_Bkg'  : sampleToFit.altBkgFit ,
         'MC_Nominal'    : sampleToFit.mcRef.getOutputPath(),
         'MC_Nominal_fit': sampleToFit.mcRef.nominalFit,
-        'MC_Alt_Sig'    : sampleToFit.mcRef.altSigFit, # not used
-        'MC_Alt_Bkg'    : sampleToFit.mcRef.altBkgFit, # not used
-        'tagSel'      : None
+        'MC_Alt_Sig'    : sampleToFit.mcRef.altSigFit,
+        'MC_Alt_Bkg'    : sampleToFit.mcRef.altBkgFit,
+        'tagSel'        : None
         }
-
-    if 'MC_Alt_Sig' in samplesDef.keys() and not (samplesDef['MC_Alt_Sig'] is None):
-
-        info['MC_Alt_Sig'] = samplesDef["MC_Alt_Sig"].getOutputPath()
-    if 'tagSel' in samplesDef.keys() and not (samplesDef['tagSel'] is None):
-        info['tagSel'] = samplesDef['tagSel'].getOutputPath()
 
     effFileName = outputDirectory+'/allEfficiencies.txt'
 
-    # security check, if the code crashes the temporary files are still present, let's remove them before executing parallel_sumUp
-    if any ("_tmpTMP_" in f for f in os.listdir(outputDirectory)):
-        os.system(f"rm {effFileName}_tmpTMP_*")
-            
+    outputDirectoryPlots = f"{outputDirectory}/plots/"
+    createPlotDirAndCopyPhp(outputDirectoryPlots)
 
+    # security check, if the code crashes the temporary files are still present, let's remove them before executing parallel_sumUp
+    if any("_tmpEFF_" in f for f in os.listdir(outputDirectory)):
+        os.system(f"rm {effFileName.rstrip(".txt")}_tmpEFF_*")
+
+    
     def parallel_sumUp(_bin):
-        effis = getAllEffi(info, _bin, outputDirectory, saveCanvas=True)
+
+        effis = getAllEffi(info, _bin)
+        plotAllEffi(info, _bin, outputDirectoryPlots, effis)
         v1Range = _bin['title'].split(';')[0].split('<')
         v2Range = _bin['title'].split(';')[1].split('<')
 
         ib = int(_bin['name'].split('_')[0].replace('bin',''))
 
-        fOut = open(effFileName+'_tmpTMP_'+str(ib), 'w')
+        fOut = open(f'{effFileName.rstrip(".txt")}_tmpEFF_{ib}.txt', 'w')
 
         if not ib:
-            fOut.write( '### var1 : %s\n' % v1Range[1] )
-            fOut.write( '### var2 : %s\n' % v2Range[1] )
+            fOut.write('### var1 : %s\n' % v1Range[1])
+            fOut.write('### var2 : %s\n' % v2Range[1])
             exp = ''
             for v in ['var1min', 'var1max', 'var2min', 'var2max']:
                 exp += f'{v:8s}\t'
             for v in ['eff data', 'err data', 'eff mc', 'err mc']:
                 exp += f'{v:10s}\t'
-            for v in ['effD altS', 'errD altS', 'effD altB', 'errD altB', 'eff mc altS', 'err mc altS', 'eff tag sel']:
+            for v in ['effD altS', 'errD altS', 'effD altB', 'errD altB', 'effMC altS', 'errMC altS', 'effMC altB', 'errMC altB','eff tagSel']:
                 exp += f'{v:12s}\t'
 
             fOut.write(exp + '\n')
@@ -401,7 +402,7 @@ if args.sumUp:
             vals += f'{float(r[0]):<+8.3f}\t{float(r[2]):+8.3f}\t'
         for v in ['Data_Nominal', 'MC_Nominal']:
             vals += f'{effis[v][0]:<10.6f}\t{effis[v][1]:<10.6f}\t'
-        for v in ['Data_Alt_Sig', 'Data_Alt_Bkg', 'MC_Alt_Sig']:
+        for v in ['Data_Alt_Sig', 'Data_Alt_Bkg', 'MC_Alt_Sig', 'MC_Alt_Bkg']:
             vals += f'{effis[v][0]:<12.6f}\t{effis[v][1]:<12.6f}\t'
         vals += f'{effis["tagSel"][0]:<12.6f}\t'
 
@@ -409,52 +410,33 @@ if args.sumUp:
         fOut.close()
         effis = {}
         
-    #odllevel = ROOT.gErrorIgnoreLevel
-    #ROOT.gErrorIgnoreLevel = ROOT.kWarning
     pool = Pool()
     pool.map(parallel_sumUp, tnpBins['bins'])
 
-    lsfiles = []
-    alltmpfiles = os.listdir(outputDirectory)
-    for ifile in alltmpfiles:
-        if not 'tmpTMP' in ifile: continue
-        lsfiles.append(outputDirectory+'/'+ifile)
+    lsfiles = [outputDirectory+"/"+f for f in os.listdir(outputDirectory) if "_tmpEFF_" in f]
+    lsfiles = sorted(lsfiles, key = lambda x: int(x.rstrip(".txt").split("_")[-1]))
 
-    lsfiles = sorted(lsfiles, key = lambda x: int(x.split('_')[-1]))
-
-    os.system('cat '+' '.join(lsfiles)+' > '+effFileName)
+    os.system('cat '+' '.join(lsfiles)+' > ' + effFileName)
     os.system('rm  '+' '.join(lsfiles))
-
-    print('Efficiencies saved in file : ',  effFileName)
-
-    outputDirectoryPlots = f"{outputDirectory}/plots/"
-    createPlotDirAndCopyPhp(outputDirectoryPlots)
-    #fOut.close()
+    print('Efficiencies saved in file : ', effFileName)
+    
     outputDirectoryTH2 = f"{outputDirectoryPlots}/histo2D/"
     createPlotDirAndCopyPhp(outputDirectoryTH2)
-
-    # Everything works, but the syntax of the various functions is awful
-    # Will change it in a second time
-    import libPython.EGammaID_scaleFactors as makesf
-    makesf.doSFs(effFileName,luminosity,['pt', 'eta'], outputDirectoryTH2)
+    makesf.doSFs(effFileName, luminosity, ['pt','eta'], outputDirectoryTH2)
 
     # plotting sanity-check plots on fitresults
-    print()
-    print("Plotting sanity-check histograms from fit results in this file")
-    print(f">>> {fileName}")
-    basePath = os.path.dirname(fileName)
-    outdirCheckPlots = basePath + "/plots/checkFitStatus/"
-    createPlotDirAndCopyPhp(outdirCheckPlots)
-    # get histogram to read binning, it is passed to checkFit
-    #rootfileWithEffi = safeOpenFile(basePath + "/allEfficiencies_2D.root")
-    #th2ForBinning = safeGetObject(rootfileWithEffi, "SF2D_nominal", detach=True)
-    #rootfileWithEffi.Close()
-    th2ForBinning = ROOT.TH2D("th2ForBinning", "", len(binning_eta)-1, array("d", binning_eta), len(binning_pt)-1, array("d", binning_pt))
-    print(f"Eta binning: {binning_eta}")
-    print(f"Pt binning : {binning_pt}")
-    tag = "MC" if "_DY_" in fileName else "Data"
-    fitName = f"Eff{tag}_" + fitType
-    checkFit(fileName, outdirCheckPlots, fitName, th2ForBinning)
+    outputDirectoryCheckPlots = f"{outputDirectoryPlots}/checkFitStatus/"
+    createPlotDirAndCopyPhp(outputDirectoryCheckPlots)
+    for typeFit in [st_name for st_name, st in fitStrategies[typeflag].items() if st is not None]:
+        print()
+        print("Plotting sanity-check histograms from fit results in this file")
+        print(f">>> {fileName}")
+        outDirChecksFit = f"{outputDirectoryCheckPlots}/{typeFit}/"
+        createPlotDirAndCopyPhp(outDirChecksFit)
+        print(f"Output: {outDirChecksFit}")
+        
+        checkFit(fileName, typeFit, binningDef, f"{outDirChecksFit}/")
+
     print("================================================")
     print("THE END!")
     print("================================================")

@@ -4,9 +4,9 @@
 # python libPython/checkFitStatus.py plots/results_test_globalMuons_byCharge_noMinos_RooMinimizerMinuit2//efficiencies_GtoH/mu_iso_plus/mu_RunGtoH_mu_iso_plus.nominalFit.root
 
 import os, sys
-import copy
 import argparse
 import ROOT
+from array import array
 
 ## safe batch mode
 args = sys.argv[:]
@@ -21,75 +21,68 @@ from libPython.plotUtils import createPlotDirAndCopyPhp, drawTH2
 sys.path.append(os.getcwd() + "/libPython/")
 
 
-def checkFit(infile, outdir, fitName, hbins):
+def checkFit(infile, fitName, binningDef, outdir):
 
-    # TODO: avoid repeating code for each histogram, but fine for now
+    bins_eta = array("d", binningDef["eta"]["bins"])
+    bins_pt  = array("d", binningDef["pt"]["bins"] )
+
+    nEtaBins, nPtBins = len(bins_eta)-1, len(bins_pt)-1
     
-    hStatusPass = copy.deepcopy(hbins.Clone(f"{fitName}_pass_status"))
-    hStatusPass.Reset("ICESM")
-    hStatusPass.SetTitle(f"{fitName} pass")
-    hStatusFail = copy.deepcopy(hbins.Clone(f"{fitName}_fail_status"))
-    hStatusFail.Reset("ICESM")
-    hStatusFail.SetTitle(f"{fitName} fail")
+    toPlot = {
+        "status":  (None, None),
+        "covQual": (None, None),
+        "mean":    (None, None),
+        "sigma":   (None, None)}
 
-    hCovQualPass = copy.deepcopy(hbins.Clone(f"{fitName}_pass_covQual"))
-    hCovQualPass.Reset("ICESM")
-    hCovQualPass.SetTitle(f"{fitName} pass")
-    hCovQualFail = copy.deepcopy(hbins.Clone(f"{fitName}_fail_covQual"))
-    hCovQualFail.Reset("ICESM")
-    hCovQualFail.SetTitle(f"{fitName} fail")
+    file = safeOpenFile(infile)
 
-    hMeanPass = copy.deepcopy(hbins.Clone(f"{fitName}_pass_mean"))
-    hMeanPass.Reset("ICESM")
-    hMeanPass.SetTitle(f"{fitName} pass")
-    hMeanFail = copy.deepcopy(hbins.Clone(f"{fitName}_fail_mean"))
-    hMeanFail.Reset("ICESM")
-    hMeanFail.SetTitle(f"{fitName} fail")
+    for i, plot in enumerate(toPlot):
 
-    # sigma only for nominal fit, it means how much the MC template is smeared, for the alternate fits there can be more sigma parameters instead 
-    if "nominal" in fitName:
-        hSigmaPass = copy.deepcopy(hbins.Clone(f"{fitName}_pass_sigma"))
-        hSigmaPass.Reset("ICESM")
-        hSigmaPass.SetTitle(f"{fitName} pass")
-        hSigmaFail = copy.deepcopy(hbins.Clone(f"{fitName}_fail_sigma"))
-        hSigmaFail.Reset("ICESM")
-        hSigmaFail.SetTitle(f"{fitName} fail")
-    
-    nEtaBins = hStatusPass.GetNbinsX()
-    nPtBins = hStatusPass.GetNbinsY()
-    
-    f = safeOpenFile(infile)
-    for k in f.GetListOfKeys():
-        name = k.GetName()
-        if "_res" not in name:
-            continue
-        obj = safeGetObject(f, name, detach=False)
-        nbin = int(name.split("_")[0].lstrip("bin"))
-        neta = int((nbin % nEtaBins) + 1)
-        npt = int((nbin / nEtaBins) + 1)
-        if "_resP" in name:
-            hStatusPass.SetBinContent(neta, npt, obj.status())
-            hCovQualPass.SetBinContent(neta, npt, obj.covQual())
-        else:
-            hStatusFail.SetBinContent(neta, npt, obj.status())
-            hCovQualFail.SetBinContent(neta, npt, obj.covQual())
-        for par in obj.floatParsFinal():
-            if par.GetName() == "meanP":
-                hMeanPass.SetBinContent(neta, npt, par.getVal())
-            elif par.GetName() == "meanF":
-                hMeanFail.SetBinContent(neta, npt, par.getVal())
-            if "nominal" in fitName:
-                if par.GetName() == "sigmaP":
-                    hSigmaPass.SetBinContent(neta, npt, par.getVal())
-                elif par.GetName() == "sigmaF":
-                    hSigmaFail.SetBinContent(neta, npt, par.getVal())
+        h2_pass = ROOT.TH2D(f"{fitName}_pass_{plot}", f"{fitName} pass - {plot}", nEtaBins, bins_eta, nPtBins, bins_pt)
+        h2_fail = ROOT.TH2D(f"{fitName}_fail_{plot}", f"{fitName} fail - {plot}", nEtaBins, bins_eta, nPtBins, bins_pt)
 
-    f.Close()
+        for k in file.GetListOfKeys():
+            name = k.GetName()
+            if "_resP" in name:
+                flag = "P"
+            elif "_resF" in name:
+                flag = "F"
+            else:
+                continue
+            obj = safeGetObject(file, name, detach=False)
+            nbin = int(name.split("_")[0].lstrip("bin"))
+            neta = int((nbin % nEtaBins) + 1)
+            npt  = int((nbin / nEtaBins) + 1)
 
-    canvas = ROOT.TCanvas("canvas","",800,800)
+            if plot not in [m for m in dir(obj) if callable(getattr(obj, m, None))]:
+                obj = obj.floatParsFinal()
+                var = obj.find(plot+flag)
+                if not isinstance(var, ROOT.RooRealVar):
+                    print(f"WARNING: {plot} not found in the RooFitResult, skipping")
+                    continue
+                obj_plot = var.getVal()
+            else:
+                obj_plot = getattr(obj, plot)()
+
+            if flag == "P":
+                h2_pass.SetBinContent(neta, npt, obj_plot)
+            else:
+                h2_fail.SetBinContent(neta, npt, obj_plot)
+
+        toPlot[plot] = (h2_pass, h2_fail)
+
+    createPlotDirAndCopyPhp(outdir)
+
+    canvas = ROOT.TCanvas("canvas","",1200, 900)
+
+    hStatusPass, hStatusFail = toPlot["status"]
+    hCovQualPass, hCovQualFail = toPlot["covQual"]
+    hMeanPass, hMeanFail = toPlot["mean"]
+    hSigmaPass, hSigmaFail = toPlot["sigma"]
 
     maxZval = int(hStatusPass.GetBinContent(hStatusPass.GetMaximumBin()))
     zrange = f" max={maxZval}::-0.5,4.5"    
+    
 
     drawTH2(hStatusPass, "Muon #eta", "Muon p_{T} (GeV)", f"Fit status {zrange}",
             hStatusPass.GetName(), plotLabel="ForceTitle", outdir=outdir, 
@@ -138,7 +131,6 @@ def checkFit(infile, outdir, fitName, hbins):
             palette=87, nContours=51, drawOption="colz")
 
     if "nominal" in fitName:
-
         maxZval = round(float(hSigmaPass.GetBinContent(hStatusPass.GetMaximumBin())), 3)
         zrange = f" max={maxZval}"    
         
@@ -154,7 +146,6 @@ def checkFit(infile, outdir, fitName, hbins):
                 hSigmaFail.GetName(), plotLabel="ForceTitle", outdir=outdir, 
                 draw_both0_noLog1_onlyLog2=1, passCanvas=canvas,
                 palette=87, nContours=51, drawOption="colz")
-
 
     
 if __name__ == "__main__":
